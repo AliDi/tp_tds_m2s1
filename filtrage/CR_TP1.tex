@@ -43,14 +43,14 @@
 
 
 \section{Introduction}
-Le but du TP est de mettre en application le théorie de la modélisation auto-régressive de systèmes vu pendant les cours de traitement du signal. Pour cela, un signal de bruit de structure est à disposition pour être analysé. Dans un premier temps, une modélisation du signal avec un modèle auto-régressif (AR) est effectuée. Le signal ainsi créé est comparé au signal source. Enfin une optimisation de la modélisation est réalisé au moyen du Critère d'Information d'Akaike ou de l'Erreur de Prédiction Linéaire.
+Le but du TP est de mettre en application la théorie de la modélisation auto-régressive de systèmes vue pendant les cours de traitement du signal. Pour cela, un signal de bruit de structure est à disposition pour être analysé. Dans un premier temps, une modélisation du signal avec un modèle auto-régressif (AR) est effectuée. Le signal ainsi créé est comparé au signal source. Enfin une optimisation de la modélisation est réalisée au moyen du Critère d'Information d'Akaike ou de l'Erreur de Prédiction Linéaire.
 Le code produit lors du TP est disponible en annexe A.
 
 
 \section{Modélisation AR d'un signal de bruit de structure}
-On appelle $b(t)$ le signal de bruit de structure à modéliser. On cherche à estimer les paramètres d'un filtre permettant de modéliser le comportement vibratoire de la structure sur laquelle est mesurée le signal $b(t)$. Pour cela on utilise un modèle auto-régressif: on cherche un filtre qui ne comporte que des pôles afin de modéliser les résonances de la structure. L'information du signal $b(t)$ peut être entièrement extraite de l'auto-corrélation de $b(t)$. On notera dans la suite cette auto-corrélation $R_{bb}(\tau)$. 
+On appelle $b(t)$ la réponse impulsionnelle de la structure à modéliser. On cherche à estimer les paramètres d'un filtre permettant de modéliser le comportement vibratoire de la structure sur laquelle est mesurée le signal $b(t)$. Pour cela on utilise un modèle auto-régressif, le filtre recherché ne comporte que des pôles afin de modéliser les résonances de la structure. L'information du signal $b(t)$ peut être entièrement extraite de l'auto-corrélation du signal. On notera dans la suite cette auto-corrélation $R_{bb}(\tau)$. 
 \bigskip
-Une fois le système modélisé par un filtre avec des paramètres connus, on peut calcul la réponse en fréquence du filtre et la comparer à la réponse en fréquence du système réel. Si une différence est observé, il suffit alors de changer les paramètres du filtre pour retrouver la bonne réponse en fréquence: le changement de ces paramètres décrit la passe du système réel d'un état à un autre. Ce principe est représenté sur le schéma figure ~\ref{schema1}.
+Une fois le système modélisé par un filtre avec des paramètres connus, on peut calculer la réponse en fréquence du filtre et la comparer à la réponse en fréquence de la structure. Si une différence est observée, il suffit alors de changer les paramètres du filtre pour retrouver la bonne réponse en fréquence: le changement de ces paramètres décrit le passage du système réel d'un état à un autre. Ce principe est représenté sur le schéma figure ~\ref{schema1}.
 
 \begin{figure}[!h]
 	\centering
@@ -61,18 +61,18 @@ Une fois le système modélisé par un filtre avec des paramètres connus, on pe
 
 
 \subsection{Calcul de l'auto-corrélation du signal réel}
-On calcul tout d'abord l'auto-corrélation du signal $b(t)$. Pour cela, la fonction $xcorr$ de matlab est utilisée. Cette auto-corrélation contient toute l'information sur le signal $b$, elle est donc suffisante pour créer un filtre permettant de reproduire se signal.
+On calcul tout d'abord l'auto-corrélation du signal $b(t)$. Pour cela, la fonction $xcorr$ de matlab est utilisée. Cette auto-corrélation contient toute l'information sur le signal $b$, elle est donc suffisante pour créer un filtre permettant de reproduire ce signal.
 
 \subsection{Construction du filtre par algorithme du Durbin-Levinson}
-La relation entre l'auto-corrélation de la réponse impulsionnelle du système réel et les paramètres du modèle est donnée par les équations de Yule Walker. Plusieurs algorithmes permettent ce calcul, l'algorithme de Durbin-Levinson a été utilisé dans le cadre du TP. La fonction matlab $levinson$ permet de calculer les coefficients du filtre ainsi que la variance idéale du bruit blanc à appliquer en entrée pour obtenir une réponse impulsionnelle se rapprochant au maximum de celle du système réel. Il suffit alors de calculer la réponse en fréquence du filtre pour pouvoir comparer modèle et système réel.
+La relation entre l'auto-corrélation de la réponse impulsionnelle du système réel et les paramètres du modèle est donnée par les équations de Yule Walker. Plusieurs algorithmes permettent ce calcul, l'algorithme de Durbin-Levinson a été utilisé dans le cadre du TP. La fonction matlab $levinson$ permet de calculer les coefficients du filtre ainsi que la variance idéale du bruit blanc à appliquer en entrée pour obtenir une réponse impulsionnelle se rapprochant au maximum de celle de la structure. Il suffit alors de calculer la réponse en fréquence du filtre pour pouvoir comparer modèle et système réel.
 
 \bigskip
-Un ordre du modèle doit être spécifié: celui-ci correspond au nombre de point pris de l'auto-corrélation du système réel pour calculer les coefficients du filtre. Cette ordre correspond donc aussi au nombre de paramètres du filtre. Dans la section suivante, on considère un modèle d'ordre $N=10$.
+Un ordre du modèle doit être spécifié: celui-ci correspond au nombre de point pris de l'auto-corrélation de la réponse impulsionnelle pour calculer les coefficients du filtre. Cette ordre correspond donc aussi au nombre de paramètres du filtre. Dans la section suivante, on considère un modèle d'ordre $N=10$.
 
 \section{Comparaison du modèle et du signal réel}
-Une fois les coefficients du filtre déterminés, on a un modèle paramétrique permettant de caractériser le système réel. Il suffit alors de recalculer les coefficients si la réponse impulsionnelle du système réel change afin d'avoir les paramètres du système au cours du temps.
+Une fois les coefficients du filtre déterminés, on a un modèle paramétrique permettant de caractériser le système réel. Il suffit alors de recalculer les coefficients si la réponse impulsionnelle du système réel change afin d'obtenir un jeu de paramètres décrivant le système au cours du temps.
 
-On calcul donc la réponse impulsionnelle du filtre en lui appliquant un bruit blanc dont la variance est donné par l'algorithme de Durbin-Levinson. A partir de cette réponse impulsionnelle théorique, différentes quantités peuvent être comparés.
+On calcul donc la réponse impulsionnelle du filtre en lui appliquant un bruit blanc dont la variance est donné par l'algorithme de Durbin-Levinson. A partir de cette réponse impulsionnelle théorique, différentes quantités peuvent être comparéss.
 
 \subsection{Comparaison des auto-corrélation}
 L'auto-corrélation de la réponse impulsionnelle du filtre est tout d'abord calculée. Celle-ci est comparée à celle du système réel sur la figure ~\ref{autocorr}.
@@ -84,7 +84,7 @@ L'auto-corrélation de la réponse impulsionnelle du filtre est tout d'abord cal
     \caption{Comparaison des signaux réel et simulé par leur fonction d'auto-corrélation}
 \end{figure}
 
-On constate que les auto-corrélations correspondent bien sur les premiers point puis divergent. Cela est du au fait que c'est l'ordre du modèle qui fixe la longueur du signal devant être identique au 2 auto-corrélations.
+Les auto-corrélations correspondent bien sur les premiers point puis divergent. Cela est dû au fait que c'est l'ordre du modèle qui fixe la longueur du signal devant être identique au 2 auto-corrélations.
 
 \subsection{Comparaison des réponses en fréquence}
 On compare maintenant les contenus en fréquentiels des réponses impulsionnelles du système réel et du filtre. Pour cela, les périodogrammes de Welch des 2 réponses impulsionnelles sont représentés figure ~\ref{dsp}. On ajoute aussi la densité spectrale de puissance théorique calculée pour le filtre.
@@ -93,11 +93,11 @@ On compare maintenant les contenus en fréquentiels des réponses impulsionnelle
 	\centering
 	\includegraphics[scale=0.7]{dsp1.png}
     \label{dsp}
-    \caption{Comparaison des signaux réel (en rouge) et simulé (en bleu et vert) par leur contenu fréquentiel}
+    \caption{Comparaison des signaux réels (en rouge) et simulés (en bleu et vert) par leurs contenu fréquentiel}
 \end{figure}
 Les périodogrammes sont calculés avec une fenêtre de Hanning de 256 points et un recouvrement de 50%.
 Les 2 signaux semble bien avoir le même contenu fréquentiel. Par conséquent, le filtre est une bonne approximation du filtrage fait par le système réel.
-On peut cependant remarquer que la deuxième résonance n'est pas très bien définie sur le filtre.
+On peut cependant remarquer que la deuxième résonance n'est pas très bien définie sur le filtre. Ce dernier point peut être corrigé en jouant sur l'ordre du filtre.
 
 \subsection{Comparaison des signaux temporelles}
 L'aspect des réponses impulsionnelles sont maintenant comparés sur la figure ~\ref{comp_temps}.
@@ -109,7 +109,7 @@ L'aspect des réponses impulsionnelles sont maintenant comparés sur la figure ~
     \caption{Comparaison des réponses impulsionnelles des signaux réel et simulé }
 \end{figure}
 
-Bien que jusqu'alors tout semble correspondre, les 2 signaux ne semble pas identiques dans le domaine temporelle. On peut en déduire que le fait que 2 signaux disposent des mêmes caractéristiques statistiques n'entraîne pas nécessairement leurs ressemblance dans le domaine temporelle. Cependant le filtre et le système réel ont bien tout deux les mêmes propriétés. 
+Bien que jusqu'alors tout semble correspondre, les 2 signaux ne semble pas identiques dans le domaine temporel. On peut en déduire que le fait que 2 signaux disposent des mêmes caractéristiques statistiques n'entraîne pas nécessairement leurs ressemblance dans le domaine temporel. Cependant le filtre et le système réel ont bien tout deux les mêmes propriétés. 
 
 \section{Optimisation du modèle par minimisation d'un critère test}
 Le seul paramètre modifiable dans la modélisation est l'ordre du modèle. La section suivante a pour but de déterminer si un ordre optimal peut être trouvé pour notre problème. Pour cela, un critère doit être défini puis être minimisé. Dans la suite, on s'intéresse à 2 critères différents.
@@ -121,7 +121,7 @@ Le premier critère est le critère d'Information d'Akaike. Celui-ci est donné 
 AIC(N) = ln(\sigma ^2) = 2 N/M
 \end{equation}
 
-$M$ est le nombre de points du signal et $\sigma ^2$ la variance (calculée pour l'algorithme de Levinson) du bruit blanc mis en entrée du modèle auto-régressif. Il est à noter que ces critères (celui-ci comme le suivant) nécessitent de recalculer les coefficients du filtre ainsi que la variance en entrée. Cela est donc assez gourmant en calcul et n'est pas nécessairement adapté à un contrôle en temps réel d'un système dynamique.
+$M$ est le nombre de points du signal et $\sigma ^2$ la variance (calculée pour l'algorithme de Levinson) du bruit blanc mis en entrée du modèle auto-régressif. Il est à noter que ces critères (celui-ci comme le suivant) nécessitent de recalculer les coefficients du filtre ainsi que la variance en entrée. Cela est donc assez gourmand en temps de calcul et n'est pas nécessairement adapté à un contrôle en temps réel d'un système dynamique.
 On trace le critère d'Information d'Akaike sur la figure ~\ref{criteres}.
 
 \subsection{erreur de prédiction finale}
@@ -140,10 +140,10 @@ Celui-ci est aussi tracé figure ~\ref{criteres}.
     \caption{Critères d'erreur de prédiction finale et critère d'Information d'Akaike en fonction de l'ordre du modèle}
 \end{figure}
 
-Un ordre du modèle optimale peut donc bien être obtenu. Cependant, un modèle avec un faible nombre de paramètres est moins coûteux en temps de calcul, un compromis dois donc être trouvé entre justesse et rapidité. Ici le minimum des 2 critères se trouvent à un ordre du modèle environ égale a $N_{opti}=40$. Cependant dès $N=20$ l'erreur commise quand on augmente l'ordre ne semble plus significative. Il n'est donc pas nécessairement pertinent d'aller au delà et ce même si le minimum des critères n'est pas atteint.
+Les 2 courbes possèdent un minimum, un ordre du modèle optimale peut donc bien être obtenu. Cependant, un modèle avec un faible nombre de paramètres est moins coûteux en temps de calcul, un compromis dois donc être trouvé entre justesse et rapidité. Ici le minimum des 2 critères se trouvent à un ordre du modèle environ égale a $N_{opti}=40$. Cependant dès $N=20$ l'erreur commise quand on augmente l'ordre ne semble plus significative. Il n'est donc pas nécessairement pertinent d'aller au delà et ce même si le minimum des critères n'est pas atteint.
 
 
-\subsection{Comparaison de la DSP optimisée et non optimisée}
+\subsection{Comparaison de la densité spectrale de puissance optimisée et non-optimisée}
 Une fois l'ordre du modèle optimal trouvé, il ne reste qu'a calculer les coefficients du filtre pour cette ordre pour finalement obtenir le périodogrammes de Welch théorique optimisé pour ce problème.
 
 \begin{figure}[!h]
@@ -153,10 +153,10 @@ Une fois l'ordre du modèle optimal trouvé, il ne reste qu'a calculer les coeff
     \caption{Comparaison des signaux réel et simulé par leur contenu fréquentiel, avec optimisation de l'ordre du modèle.}
 \end{figure}
 
-Dans se cas de figure, la deuxième résonance est bien mieux définie que pour un modèle d'ordre $N=10$.
+Dans se cas de figure, la deuxième résonance est bien mieux définie que pour un modèle d'ordre $N=10$. L'ordre $N_{opti} = 42$ permet bien une meilleur estimation de la réponse en fréquence de la structure. Le modèle est cependant plus long en temps de calcul car il prend en compte un plus grand nombre de paramètres.
 
 \section{Conclusion}
-En conclusion, ce TP aura permis de mieux saisir les concepts vu en cours de traitement du signal au sujet des modèle auto-régressif. L'utilisation de ce type de modèle à l'avantage de donner des paramètres que l'on peut analyser pour déterminer l'état d'un système physique qui serait trop compliqué (voir impossible) d'obtenir en utilisant une approche de physique mécanique.
+En conclusion, ce TP aura permis de mieux saisir les concepts vu en cours de traitement du signal au sujet des modèle auto-régressifs. L'utilisation de ce type de modèle à l'avantage de donner des paramètres que l'on peut analyser pour déterminer l'état d'un système physique alors qu'il serait trop compliqué (voir impossible) d'obtenir ces paramètres en utilisant une approche de physique mécanique. Il est cependant important de noter que les paramètres ainsi obtenus n'ont aucune réalité physique dans le sens ou ils découlent d'une modélisation mathématique et non pas d'une approche physique du système.
 
 De nombreuses applications résultent de cette approche comme la prédiction linéaire ou encore le contrôle actif de certains systèmes.
 
