@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.1415926-2.5-1.40.14 (TeX Live 2013/Debian) (format=pdflatex 2014.5.13)  24 NOV 2015 15:17
+This is pdfTeX, Version 3.1415926-2.5-1.40.14 (TeX Live 2013/Debian) (format=pdflatex 2014.5.13)  24 NOV 2015 20:09
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -907,13 +907,19 @@ Package caption3 Info: TeX engine: e-TeX on input line 57.
 (/usr/share/texlive/texmf-dist/tex/latex/multirow/multirow.sty
 \bigstrutjot=\dimen177
 )
+(/usr/share/texlive/texmf-dist/tex/latex/tools/verbatim.sty
+Package: verbatim 2003/08/22 v1.5q LaTeX2e package for verbatim enhancements
+\every@verbatim=\toks33
+\verbatim@line=\toks34
+\verbatim@in@stream=\read2
+)
 (/usr/share/texlive/texmf-dist/tex/latex/fancyvrb/fancyvrb.sty
 Package: fancyvrb 2008/02/07
 
 Style option: `fancyvrb' v2.7a, with DG/SPQR fixes, and firstline=lastline fix 
 <2008/02/07> (tvz)
 \FV@CodeLineNo=\count132
-\FV@InFile=\read2
+\FV@InFile=\read3
 \FV@TabBox=\box37
 \c@FancyVerbLine=\count133
 \FV@StepNumber=\count134
@@ -925,25 +931,25 @@ Package: url 2013/09/16  ver 3.4  Verb mode for urls, etc.
 (./CR_TP1.aux)
 \openout1 = `CR_TP1.aux'.
 
-LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 39.
-LaTeX Font Info:    ... okay on input line 39.
-LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 39.
-LaTeX Font Info:    ... okay on input line 39.
-LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 39.
-LaTeX Font Info:    ... okay on input line 39.
-LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 39.
-LaTeX Font Info:    ... okay on input line 39.
-LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 39.
-LaTeX Font Info:    ... okay on input line 39.
-LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 39.
-LaTeX Font Info:    ... okay on input line 39.
-LaTeX Font Info:    Checking defaults for TS1/cmr/m/n on input line 39.
-LaTeX Font Info:    Try loading font information for TS1+cmr on input line 39.
+LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 40.
+LaTeX Font Info:    ... okay on input line 40.
+LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 40.
+LaTeX Font Info:    ... okay on input line 40.
+LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 40.
+LaTeX Font Info:    ... okay on input line 40.
+LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 40.
+LaTeX Font Info:    ... okay on input line 40.
+LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 40.
+LaTeX Font Info:    ... okay on input line 40.
+LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 40.
+LaTeX Font Info:    ... okay on input line 40.
+LaTeX Font Info:    Checking defaults for TS1/cmr/m/n on input line 40.
+LaTeX Font Info:    Try loading font information for TS1+cmr on input line 40.
  (/usr/share/texlive/texmf-dist/tex/latex/base/ts1cmr.fd
 File: ts1cmr.fd 1999/05/25 v2.5h Standard LaTeX font definitions
 )
-LaTeX Font Info:    ... okay on input line 39.
-LaTeX Font Info:    Try loading font information for T1+lmr on input line 39.
+LaTeX Font Info:    ... okay on input line 40.
+LaTeX Font Info:    Try loading font information for T1+lmr on input line 40.
 
 (/usr/share/texmf/tex/latex/lm/t1lmr.fd
 File: t1lmr.fd 2009/10/30 v1.6 Font defs for Latin Modern
@@ -955,12 +961,12 @@ File: t1lmr.fd 2009/10/30 v1.6 Font defs for Latin Modern
 \scratchbox=\box38
 \nofMPsegments=\count136
 \nofMParguments=\count137
-\everyMPshowfont=\toks33
+\everyMPshowfont=\toks35
 \MPscratchCnt=\count138
 \MPscratchDim=\dimen179
 \MPnumerator=\count139
 \makeMPintoPDFobject=\count140
-\everyMPtoPDFconversion=\toks34
+\everyMPtoPDFconversion=\toks36
 ) ABD: EveryShipout initializing macros
 (/usr/share/texlive/texmf-dist/tex/generic/oberdiek/pdftexcmds.sty
 Package: pdftexcmds 2011/11/29 v0.20 Utility functions of pdfTeX for LuaTeX (HO
@@ -1006,9 +1012,9 @@ G,.JBIG2,.JB2,.eps]
 File: epstopdf-sys.cfg 2010/07/13 v1.3 Configuration of (r)epstopdf for TeX Liv
 e
 ))
-LaTeX Info: Redefining \degres on input line 39.
-LaTeX Info: Redefining \dots on input line 39.
-LaTeX Info: Redefining \up on input line 39.
+LaTeX Info: Redefining \degres on input line 40.
+LaTeX Info: Redefining \dots on input line 40.
+LaTeX Info: Redefining \up on input line 40.
 
 *geometry* driver: auto-detecting
 *geometry* detected driver: pdftex
@@ -1050,113 +1056,185 @@ Package lastpage Info: Please have a look at the pageslts package at
 (lastpage)             or
 (lastpage)             http://www.ctan.org/tex-archive/ 
 (lastpage)             install/macros/latex/contrib/pageslts.tds.zip
-(lastpage)             ! on input line 39.
+(lastpage)             ! on input line 40.
 Package caption Info: Begin \AtBeginDocument code.
 Package caption Info: End \AtBeginDocument code.
-LaTeX Font Info:    Try loading font information for OT1+lmr on input line 40.
+LaTeX Font Info:    Try loading font information for OT1+lmr on input line 41.
 (/usr/share/texmf/tex/latex/lm/ot1lmr.fd
 File: ot1lmr.fd 2009/10/30 v1.6 Font defs for Latin Modern
 )
-LaTeX Font Info:    Try loading font information for OML+lmm on input line 40.
+LaTeX Font Info:    Try loading font information for OML+lmm on input line 41.
 
 (/usr/share/texmf/tex/latex/lm/omllmm.fd
 File: omllmm.fd 2009/10/30 v1.6 Font defs for Latin Modern
 )
-LaTeX Font Info:    Try loading font information for OMS+lmsy on input line 40.
+LaTeX Font Info:    Try loading font information for OMS+lmsy on input line 41.
 
 
 (/usr/share/texmf/tex/latex/lm/omslmsy.fd
 File: omslmsy.fd 2009/10/30 v1.6 Font defs for Latin Modern
 )
-LaTeX Font Info:    Try loading font information for OMX+lmex on input line 40.
+LaTeX Font Info:    Try loading font information for OMX+lmex on input line 41.
 
 
 (/usr/share/texmf/tex/latex/lm/omxlmex.fd
 File: omxlmex.fd 2009/10/30 v1.6 Font defs for Latin Modern
 )
 LaTeX Font Info:    External font `lmex10' loaded for size
-(Font)              <12> on input line 40.
+(Font)              <12> on input line 41.
 LaTeX Font Info:    External font `lmex10' loaded for size
-(Font)              <8> on input line 40.
+(Font)              <8> on input line 41.
 LaTeX Font Info:    External font `lmex10' loaded for size
-(Font)              <6> on input line 40.
-LaTeX Font Info:    Try loading font information for U+msa on input line 40.
+(Font)              <6> on input line 41.
+LaTeX Font Info:    Try loading font information for U+msa on input line 41.
 
 (/usr/share/texlive/texmf-dist/tex/latex/amsfonts/umsa.fd
 File: umsa.fd 2013/01/14 v3.01 AMS symbols A
 )
-LaTeX Font Info:    Try loading font information for U+msb on input line 40.
+LaTeX Font Info:    Try loading font information for U+msb on input line 41.
 
 (/usr/share/texlive/texmf-dist/tex/latex/amsfonts/umsb.fd
 File: umsb.fd 2013/01/14 v3.01 AMS symbols B
 )
 LaTeX Font Info:    External font `lmex10' loaded for size
-(Font)              <10> on input line 48.
+(Font)              <10> on input line 51.
 LaTeX Font Info:    External font `lmex10' loaded for size
-(Font)              <7> on input line 48.
+(Font)              <7> on input line 51.
 LaTeX Font Info:    External font `lmex10' loaded for size
-(Font)              <5> on input line 48.
-
-<autocorr.png, id=4, 421.575pt x 316.18124pt>
-File: autocorr.png Graphic file (type png)
- <use autocorr.png>
-Package pdftex.def Info: autocorr.png used on input line 64.
-(pdftex.def)             Requested size: 210.78697pt x 158.09023pt.
-
-<dsp1.png, id=5, 421.575pt x 316.18124pt>
-File: dsp1.png Graphic file (type png)
- <use dsp1.png>
-Package pdftex.def Info: dsp1.png used on input line 71.
-(pdftex.def)             Requested size: 210.78697pt x 158.09023pt.
+(Font)              <5> on input line 51.
 
 
-LaTeX Warning: `!h' float specifier changed to `!ht'.
+Package caption Warning: \label without proper \caption on input line 58.
+See the caption package documentation for explanation.
 
-<criteres.png, id=6, 421.575pt x 316.18124pt>
-File: criteres.png Graphic file (type png)
- <use criteres.png>
-Package pdftex.def Info: criteres.png used on input line 83.
-(pdftex.def)             Requested size: 210.78697pt x 158.09023pt.
+
+LaTeX Warning: Reference `schema1' on page 1 undefined on input line 53.
+
+<schema_explicatif.png, id=4, 576.554pt x 228.052pt>
+File: schema_explicatif.png Graphic file (type png)
+
+<use schema_explicatif.png>
+Package pdftex.def Info: schema_explicatif.png used on input line 57.
+(pdftex.def)             Requested size: 403.58505pt x 159.6353pt.
  [1
 
-{/var/lib/texmf/fonts/map/pdftex/updmap/pdftex.map} <./autocorr.png (PNG copy)>
-]
-<otpi.png, id=20, 421.575pt x 316.18124pt>
+{/var/lib/texmf/fonts/map/pdftex/updmap/pdftex.map} <./schema_explicatif.png>]
+
+Package caption Warning: \label without proper \caption on input line 83.
+See the caption package documentation for explanation.
+
+
+LaTeX Warning: Reference `autocorr' on page 2 undefined on input line 78.
+
+<autocorr.png, id=21, 421.575pt x 316.18124pt>
+File: autocorr.png Graphic file (type png)
+ <use autocorr.png>
+Package pdftex.def Info: autocorr.png used on input line 82.
+(pdftex.def)             Requested size: 295.10048pt x 221.32535pt.
+
+
+Package caption Warning: \label without proper \caption on input line 95.
+See the caption package documentation for explanation.
+
+
+LaTeX Warning: Reference `dsp' on page 2 undefined on input line 90.
+
+<dsp1.png, id=22, 421.575pt x 316.18124pt>
+File: dsp1.png Graphic file (type png)
+ <use dsp1.png>
+Package pdftex.def Info: dsp1.png used on input line 94.
+(pdftex.def)             Requested size: 295.10048pt x 221.32535pt.
+ [2 <./autocorr.png (PNG copy)>]
+
+Package caption Warning: \label without proper \caption on input line 108.
+See the caption package documentation for explanation.
+
+
+LaTeX Warning: Reference `comp_temps' on page 3 undefined on input line 103.
+
+<comp_temps.png, id=26, 578.16pt x 433.62pt>
+File: comp_temps.png Graphic file (type png)
+ <use comp_temps.png>
+Package pdftex.def Info: comp_temps.png used on input line 107.
+(pdftex.def)             Requested size: 289.07928pt x 216.80946pt.
+ [3 <./dsp1.png (PNG copy)> <./comp_temps.png>]
+
+Package caption Warning: \label without proper \caption on input line 139.
+See the caption package documentation for explanation.
+
+
+LaTeX Warning: Reference `criteres' on page 4 undefined on input line 125.
+
+
+Package caption Warning: \label without proper \caption on input line 139.
+See the caption package documentation for explanation.
+
+
+LaTeX Warning: Reference `criteres' on page 4 undefined on input line 133.
+
+<criteres.png, id=30, 421.575pt x 316.18124pt>
+File: criteres.png Graphic file (type png)
+ <use criteres.png>
+Package pdftex.def Info: criteres.png used on input line 138.
+(pdftex.def)             Requested size: 295.10048pt x 221.32535pt.
+ [4 <./criteres.png (PNG copy)>] <otpi.png, id=36, 421.575pt x 316.18124pt>
 File: otpi.png Graphic file (type png)
  <use otpi.png>
-Package pdftex.def Info: otpi.png used on input line 92.
+Package pdftex.def Info: otpi.png used on input line 151.
 (pdftex.def)             Requested size: 210.78697pt x 158.09023pt.
 
+[5 <./otpi.png (PNG copy)>]
+LaTeX Font Info:    Try loading font information for T1+lmtt on input line 167.
 
-LaTeX Warning: `!h' float specifier changed to `!ht'.
+ (/usr/share/texmf/tex/latex/lm/t1lmtt.fd
+File: t1lmtt.fd 2009/10/30 v1.6 Font defs for Latin Modern
+)
+Overfull \hbox (40.45729pt too wide) in paragraph at lines 207--207
+[]\T1/lmtt/m/n/10 H_estime= H_estime + a_levinson(n).*exp(-j*2*pi*n*Te*f); %fon
+ction de transfert du filtre[] 
+ []
+
+
+Overfull \hbox (50.95726pt too wide) in paragraph at lines 224--224
+[]\T1/lmtt/m/n/10 legend('DSP theorique','Periodogramme de Welch sur y(t)','Per
+iodogramme de Welch sur b(t)')[] 
+ []
+
+[6]
+Overfull \hbox (40.45729pt too wide) in paragraph at lines 257--257
+[]\T1/lmtt/m/n/10 H_estime= H_estime + a_levinson(n).*exp(-j*2*pi*n*Te*f); %fon
+ction de transfert du filtre[] 
+ []
 
 
 AED: lastpage setting LastPage
-[2 <./dsp1.png (PNG copy)> <./criteres.png (PNG copy)>] [3 <./otpi.png (PNG cop
-y)>] (./CR_TP1.aux)
+[7] (./CR_TP1.aux)
 
-LaTeX Warning: Label(s) may have changed. Rerun to get cross-references right.
+LaTeX Warning: There were undefined references.
 
  ) 
 Here is how much of TeX's memory you used:
- 15418 strings out of 493304
- 269548 string characters out of 6139871
- 328829 words of memory out of 5000000
- 18505 multiletter control sequences out of 15000+600000
- 49488 words of font info for 53 fonts, out of 8000000 for 9000
+ 15434 strings out of 493304
+ 269440 string characters out of 6139871
+ 327459 words of memory out of 5000000
+ 18512 multiletter control sequences out of 15000+600000
+ 52802 words of font info for 55 fonts, out of 8000000 for 9000
  957 hyphenation exceptions out of 8191
- 63i,9n,92p,571b,684s stack positions out of 5000i,500n,10000p,200000b,80000s
+ 63i,7n,92p,650b,369s stack positions out of 5000i,500n,10000p,200000b,80000s
 {/usr/share/texmf/fonts/enc/dvips/lm/lm-ec.enc}{/usr/share/texmf/fonts/enc/dv
-ips/lm/lm-mathit.enc}{/usr/share/texmf/fonts/enc/dvips/lm/lm-rm.enc}</usr/share
-/texmf/fonts/type1/public/lm/lmbx12.pfb></usr/share/texmf/fonts/type1/public/lm
-/lmcsc10.pfb></usr/share/texmf/fonts/type1/public/lm/lmmi10.pfb></usr/share/tex
-mf/fonts/type1/public/lm/lmmi7.pfb></usr/share/texmf/fonts/type1/public/lm/lmr1
-0.pfb></usr/share/texmf/fonts/type1/public/lm/lmr12.pfb></usr/share/texmf/fonts
-/type1/public/lm/lmr17.pfb>
-Output written on CR_TP1.pdf (3 pages, 233434 bytes).
+ips/lm/lm-mathsy.enc}{/usr/share/texmf/fonts/enc/dvips/lm/lm-rm.enc}{/usr/share
+/texmf/fonts/enc/dvips/lm/lm-mathit.enc}</usr/share/texmf/fonts/type1/public/lm
+/lmbx10.pfb></usr/share/texmf/fonts/type1/public/lm/lmbx12.pfb></usr/share/texm
+f/fonts/type1/public/lm/lmcsc10.pfb></usr/share/texmf/fonts/type1/public/lm/lmm
+i10.pfb></usr/share/texmf/fonts/type1/public/lm/lmmi7.pfb></usr/share/texmf/fon
+ts/type1/public/lm/lmr10.pfb></usr/share/texmf/fonts/type1/public/lm/lmr12.pfb>
+</usr/share/texmf/fonts/type1/public/lm/lmr17.pfb></usr/share/texmf/fonts/type1
+/public/lm/lmr7.pfb></usr/share/texmf/fonts/type1/public/lm/lmsy10.pfb></usr/sh
+are/texmf/fonts/type1/public/lm/lmtt10.pfb>
+Output written on CR_TP1.pdf (7 pages, 428487 bytes).
 PDF statistics:
- 54 PDF objects out of 1000 (max. 8388607)
- 37 compressed objects within 1 object stream
+ 89 PDF objects out of 1000 (max. 8388607)
+ 61 compressed objects within 1 object stream
  0 named destinations out of 1000 (max. 500000)
- 33 words of extra memory for PDF output out of 10000 (max. 10000000)
+ 43 words of extra memory for PDF output out of 10000 (max. 10000000)
 

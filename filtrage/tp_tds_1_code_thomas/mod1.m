@@ -13,7 +13,7 @@ Er = xcorr(b,'biased');
 
 %==========================================================================
 %Q2: modèle autoregressif à 10 coefs
-ordre_modele = 20;                      %nb de points pris pour calculer les coefs du filtre
+ordre_modele = 10;                      %nb de points pris pour calculer les coefs du filtre
 [coefs e] = levinson(Er(length(temps):length(temps)+ordre_modele));      % calcul des coefs du filtre
 bruit =  sqrt(e)*randn(1,length(b));                                            % calcul d'un bruit
 modele = filter(1,coefs,bruit);                                        % filtrage du bruit
@@ -34,6 +34,8 @@ plot(temps, modele,'-r');
 legend('signal','modele');
 title('comparaison des signaux');
 xlabel('temps');
+xlim([0 1e-5]);
+print -dpng comp_temps.png
 
 Ntfd = length(temps);
 f = (0:(Ntfd-1))*(fe/Ntfd/2);

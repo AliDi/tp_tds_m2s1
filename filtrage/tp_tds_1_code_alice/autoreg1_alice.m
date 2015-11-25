@@ -1,14 +1,14 @@
 %TP : modélisation autorégressive
 %18/11/15
 
-clear all; close all; 
+clear all; close all; clc
 
 N=10; %ordre du filtre
 
-load('bruit_structure.mat');
+load('bruit_structure.mat');   %chargement des données du système réel
 L=length(b);
 
-autocorr_b = xcorr(b,'biased');
+autocorr_b = xcorr(b,'biased');    %calcul de l'auto-corrélation 
 
 %modele AR avec "Levinson-Durbin recursion"
 %==========================================================================
