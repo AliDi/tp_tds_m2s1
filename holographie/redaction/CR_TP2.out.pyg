@@ -1,0 +1,10 @@
+\begin{Verbatim}[commandchars=\\\{\},numbers=left,firstnumber=1,stepnumber=1,codes={\catcode`\$=3\catcode`\^=7\catcode`\_=8}, ,frame=lines,fontsize=\small ]
+\PY{o}{\PYZpc{}} \PY{n}{bf\PYZus{}traitement}
+\PY{o}{\PYZpc{}}
+\PY{o}{\PYZpc{}} \PY{n}{TP} \PY{n}{Formation} \PY{n}{de} \PY{n}{voies}
+\PY{o}{\PYZpc{}} \PY{n}{Jean}\PY{o}{\PYZhy{}}\PY{n}{Claude} \PY{n}{Pascal} \PY{n}{et} \PY{n}{Jean}\PY{o}{\PYZhy{}}\PY{n}{Hugh} \PY{n}{Thomas}
+\PY{o}{\PYZpc{}}
+\PY{n}{close} \PY{n+nb}{all}\PY{p}{;} \PY{n}{clear} \PY{n+nb}{all}\PY{p}{;}
+\PY{o}{\PYZpc{}\PYZhy{}\PYZhy{}} \PY{n}{d}\PY{err}{é}\PY{n}{termination} \PY{n}{de} \PY{n}{la} \PY{n}{m}\PY{err}{é}\PY{n}{thode} \PY{p}{:} \PY{l+s}{\PYZsq{}bartlet\PYZsq{}}\PY{p}{,}\PY{l+s}{\PYZsq{}capon\PYZsq{}}\PY{p}{,}\PY{l+s}{\PYZsq{}music\PYZsq{}}
+\PY{n}{bfmethod} \PY{o}{=} \PY{l+s}{\PYZsq{}music\PYZsq{}}\PY{p}{;}
+\end{Verbatim}

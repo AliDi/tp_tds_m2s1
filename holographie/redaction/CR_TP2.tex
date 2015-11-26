@@ -27,6 +27,9 @@
     \usepackage{fancyvrb} % pour forcer les verbatim sur une seule page
     \usepackage{url}
     
+    \usepackage{subfigure}
+    \usepackage{minted}
+    
     \newcommand\matlab{MATLab\textsuperscript{\textregistered}}
 
 \renewcommand{\b}[1]{\boldsymbol{#1}}
@@ -53,9 +56,19 @@ Ce rapport vise à comparer trois méthodes de formation de voies testées sur d
 
 Des mesures de champs acoustiques sont effectuées à l'aide d'une antenne constituée de \textcolor{red}{??????} microphones disposés en spirale.
 
-Les sources sont placées dans un plan situé à 1,43 m de l'axe de l'antenne. 
+Les sources sont placées dans un plan situé à 1,43 m de l'axe de l'antenne. Deux configurations sont testées et présentées en figure~\ref{exp}.
 
-blabla  et on obtient la matrice interspectrale des microphones appelée $G_{pp}$.
+\begin{figure}[!h]
+	\subfigure[Configuration 1 : le haut-parleur 1 émet un sinus pur à 600 Hz et l'enceinte 2 émet un bruit blanc.]{
+		\includegraphics[width=.5\textwidth]{exp.png} }
+	\hspace{1cm}
+	\subfigure[Configuration 2 : le haut-parleur 1 émet un sinus pur à 800 Hz et l'enceinte 2 émet un bruit blanc.]{
+		\includegraphics[width=.5\textwidth]{exp2.png}
+	}
+	\caption{\label{exp} Configurations du plan source.}
+\end{figure}
+
+La matrice interspectrale des microphones appelée $G_{pp}$ peut ainsi être obtenue à l'aide du logiciel Signal Express et du boîtier d'acquisition National Instrument.
 
 
 
@@ -84,5 +97,6 @@ Cette méthode est basée sur la décomposition en valeurs propres de la matrice
 \end{equation}
 
 où $\sigma_q$ sont les valeurs propres de l'espace bruit et $M$ est le nombre de champs cohérents orthogonaux qui composent $G_{pp}$.
+
 
 \end{document}
