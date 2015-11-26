@@ -1,0 +1,165 @@
+function varargout = find_file_id(varargin)
+%HDFfileAScontrol
+%
+% PURPOSE
+%    Find HDF id from its name (create, write or read)
+%
+% SYNOPSIS
+%      [id,err_type,completefilename] = find_file_id(filename,acces_mode) ... ,err_disp)
+%      err_msg = find_file_id('errmsg',err_type) ...,lang)
+%
+% DESCRIPTION
+%        id          -> status (-1 : fail, 0 : file already exist with create, >0 : success)
+%        err_type    -> cell of error code 
+%        completefilename -> file name with .hdf extention is created or existe
+%        filename    -> name of the HDF file
+%        acces_mode  ->  {'create','read','write'}  ('read'='rdonly','write'='rdwr')
+%        err_disp    -> disp error message if 'en' or 'fr' (optional: err_disp = 'none')
+%        err_msg     -> error message cell 
+%        lang        -> language ('fr' or 'en', optional : 'en')
+% 
+% SEE ALSO
+%     hdfml('listinfo'), hdfml('closeall')   
+
+% EXAMPLES   
+%
+% ALGORITHM
+%
+% REFERENCES
+%    Matlab, Using Matlab, Version 6, 2002 (R13).
+%
+% Comments:   
+%
+% Matlab Toolbox functions used: none
+%
+% External librairies and languages: none
+%
+% Test procedure: none
+%
+% Copyright 1997-2007 VisualVibroAcoustics
+% jcp 08/12/02                                             version 19/09/06 
+%------------------------------------------------------------------------------------------------------------------------------
+%  name  |   date    |  modification description
+%------------------------------------------------------------------------------------------------------------------------------
+%  jcp   | 24/05/04  | add err_type = 'invalid input';
+%------------------------------------------------------------------------------------------------------------------------------
+%  jcp   | 17/08/05  | use icompiled function
+%------------------------------------------------------------------------------------------------------------------------------
+%  jfl   | 19/09/06  | delete iscompile and modified exist(filename,'file')==2) around lines 61-63
+%------------------------------------------------------------------------------------------------------------------------------
+%  jcp   | 07/10/07  | change error behaviour to take in account empty file and short file
+%------------------------------------------------------------------------------------------------------------------------------
+
+%--validity control 1
+%
+err_type = '';
+%------------------------------------------------------------------------------------------------------------------------------
+if ischar(varargin{1})&~strcmp(varargin{1},'errmsg')
+   filename = varargin{1};
+   acces_mode = varargin{2};
+   if nargin==3; err_disp = varargin{3}; else, err_disp = 'none'; end
+   if length(filename)<5|~strcmp(filename(end-3:end),'.hdf')
+      filename = [filename '.hdf'];
+   end
+   %exist_file = (exist(filename,'file')==2);                     % add 'file' jcp   | 17/08/05
+   %if iscompiled, exist_file = abs(exist_file - 1); end          %jcp   | 17/08/05
+   % JF 19/09/2006 exist(filename,'file')==2 does not work for compiling because this form is not support in stand alone mode
+   exist_file = (exist(filename)==2);
+   switch acces_mode
+   %-----------------------------------------------------------------------
+   case 'create'
+       if ~exist_file
+           access = 'create'; n_dds = 0;
+           id = hdfh('open',filename,access,n_dds);     % create an HDF file
+           %id = hdfsd('start',filename,'create');       % create a HDF-SD file
+           if id==-1, err_type = {'find_file_id: fail create'}; end 
+       else
+           id = 0;                                      % the HDF SD file exist
+           err_type = {'find_file_id: exist'}; 
+       end
+   %-----------------------------------------------------------------------
+   case {'read','rdonly'}
+       tf = hdfh('ishdf',filename);
+       if tf==1
+           access = 'read'; n_dds = 0;
+           id = hdfh('open',filename,access,n_dds);     % read an HDF file
+           %id = hdfsd('start',filename,'read');
+           if id==-1, err_type = {'find_file_id: fail read'}; end
+       else
+           id = -1;
+           err_type = {'find_file_id: not HDF'};
+       end
+   
+   %----------------------------------------------------------------------- 
+   case {'write','rdwr'}
+       tf = hdfh('ishdf',filename);
+       if tf==1
+           access = 'write'; n_dds = 0;
+           id = hdfh('open',filename,access,n_dds);     % write an HDF file
+           %id = hdfsd('start',filename,'write');
+           if id==-1, err_type = {'find_file_id: fail write'}; end 
+       else
+           id = -1;
+           err_type = {'find_file_id: not HDF'};
+       end
+
+   %----------------------------------------------------------------------- 
+   otherwise
+       error('invalid acces_mode'),
+   end
+   
+   varargout{1} = id;
+   if nargout>1; varargout{2} = err_type; end
+   if ~isempty(err_type)&~strcmp(err_disp,'none')
+       err_disp = find_err_str(err_type,err_disp);
+       disp(' '), disp(err_disp), disp(' '),
+   end
+   if nargout>2; varargout{3} = filename; end
+  
+%------------------------------------------------------------------------------------------------------------------------------
+elseif ischar(varargin{1})&strcmp(varargin{1},'errmsg')
+   err_type = varargin{2};
+   if nargin>2, lang = varargin{3}; else, lang = 'en'; end
+   err_disp = 0;
+   varargout{1} = find_err_str(err_type,lang);
+%------------------------------------------------------------------------------------------------------------------------------
+else
+   if isempty(varargin{1}), err_type = {'find_file_id: empty file'}; else, err_type = {'find_file_id: invalid input'}; end
+   if nargout>1
+      varargout{1} = -1; varargout{2} = err_type;
+      if nargout>2, varargout{3} = []; end
+  else
+      varargout{1} = err_type;
+  end
+  
+%------------------------------------------------------------------------------------------------------------------------------
+end
+
+%==============================================================================================================================
+function err_msg = find_err_str(err_type,lang)
+  err(1).type = 'find_file_id: exist';
+  err(1).str.fr = 'un fichier .hdf de meme nom existe déjà';
+  err(1).str.en = 'a HDF file with the same name already exist';
+  err(2).type = 'find_file_id: fail create';
+  err(2).str.fr = 'la création du fichier HDF a échouée';
+  err(2).str.en = 'the HDF file creation is failed';
+  err(3).type = 'find_file_id: fail read';
+  err(3).str.fr = 'l''ouverture en lecture du fichier HDF a échouée';
+  err(3).str.en = 'the openning of the HDF file to read is failed';
+  err(4).type = 'find_file_id: fail write';
+  err(4).str.fr = 'l''ouverture en écriture du fichier HDF a échouée';
+  err(4).str.en = 'the openning of the HDF file to write is failed';
+  err(5).type = 'find_file_id: not HDF';
+  err(5).str.fr = 'ce n''est pas un fichier HDF';
+  err(5).str.en = 'this is not an HDF file';
+  err(6).type = 'find_file_id: empty file';
+  err(6).str.fr = 'le nom du fichier est vide';
+  err(6).str.en = 'the filename is empty';
+  err(7).type = 'find_file_id: invalid input';
+  err(7).str.fr = 'l''argument n''est pas valide';
+  err(7).str.en = 'the input argument is not valid';
+
+  for ii=1:length(err)
+     if strcmp(err(ii).type,err_type), err_msg = getfield(err(ii).str,lang); end
+  end
+%------------------------------------------------------------------------------------------------------------------------------

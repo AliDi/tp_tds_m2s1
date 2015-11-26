@@ -1,0 +1,339 @@
+function an_struct = ASannotations(code,filename)
+%ASannotations
+%
+% PURPOSE
+%    User interface to enter informations on an HDF file using annotations facility
+%    Application : Stationary NAH  Version 0.12
+%
+% SYNOPSIS
+%    ANStationaryNAH(code,filename)                               
+%    an_struct = ANStationaryNAH(code,filename)                                
+%
+% DESCRIPTION
+%  an_struct  -> annotation structure
+%  code       -> 'disp'  print the informations on screen
+%                'modification' enter in the modification mode to change the informations
+%                'get' return the structure of the predefined annotations
+%                'dlgbox' create a dialogbox to display and modification
+%  filename   -> name of the HDF file
+%  
+% SEE ALSO
+%    
+
+% EXAMPLES 
+%
+% ALGORITHM
+%  
+% REFERENCES
+%    Matlab Reference Guide
+%
+% Comments:
+%
+% Matlab Toolbox functions used: none
+%
+% External librairies and languages: none
+%
+% Test procedure: none
+%
+%  Copyright 2002-2007 VisualVibroAcoustics
+%  jcp 13/10/03                                                                            version 06/04/07
+%----------------------------------------------------------------------------------------------------------
+%  name  |   date    |  modification description
+%----------------------------------------------------------------------------------------------------------
+%  jcp   | 07/06/04  | add 'dlgbox' code to use in 0.12
+%        | 27/09/04  | translate answers in english
+%----------------------------------------------------------------------------------------------------------
+%  jcp   | 01/01/06  | add '$$TestFreq$$' and '$$TestDraw$$' (output by get only)
+%----------------------------------------------------------------------------------------------------------
+%  jcp   | 25/07/06  | minor modifications 
+%----------------------------------------------------------------------------------------------------------
+%  jcp   | 06/04/07  | add some fields : 
+%----------------------------------------------------------------------------------------------------------
+
+ASHDFVer = '$$VVAHDF4AS030$$';
+ApplVers = {'0.30'};
+
+%-- pre-processing
+
+in_struct.ApplName = HDFfileAScontrol('getannotations',filename,'file_label',ASHDFVer);
+if ~isempty(in_struct.ASHDFVer), in_struct.ASHDFVer = {in_struct.ASHDFVer{1}(13:end)}; end
+
+in_struct.ApplName = HDFfileAScontrol('getannotations',filename,'file_label','$$ApplName$$');
+if ~isempty(in_struct.ApplName), in_struct.ApplName = {in_struct.ApplName{1}(13:end)}; end
+
+in_struct.ApplVers = HDFfileAScontrol('getannotations',filename,'file_label','$$ApplVers$$');
+if ~isempty(in_struct.ApplVers), in_struct.ApplVers = {in_struct.ApplVers{1}(13:end)}; end
+
+in_struct.ApplSrcp = HDFfileAScontrol('getannotations',filename,'file_label','$$ApplSrcp$$');
+if ~isempty(in_struct.ApplSrcp), in_struct.ApplSrcp = {in_struct.ApplSrcp{1}(13:end)}; end
+
+in_struct.ApplTemp = HDFfileAScontrol('getannotations',filename,'file_label','$$ApplTemp$$');
+if ~isempty(in_struct.ApplTemp), in_struct.ApplTemp = {in_struct.ApplTemp{1}(13:end)}; end
+
+in_struct.TestLabe = HDFfileAScontrol('getannotations',filename,'file_label','$$TestLabe$$');
+if ~isempty(in_struct.TestLabe), in_struct.TestLabe = {in_struct.TestLabe{1}(13:end)}; end
+
+in_struct.TestName = HDFfileAScontrol('getannotations',filename,'file_label','$$TestName$$');
+if ~isempty(in_struct.TestName), in_struct.TestName = {in_struct.TestName{1}(13:end)}; end
+
+in_struct.TestDate = HDFfileAScontrol('getannotations',filename,'file_label','$$TestDate$$');
+if ~isempty(in_struct.TestDate), in_struct.TestDate = {in_struct.TestDate{1}(13:end)}; end
+
+in_struct.TestDesc = HDFfileAScontrol('getannotations',filename,'file_desc','$$TestDesc$$');
+if ~isempty(in_struct.TestDesc), in_struct.TestDesc = {in_struct.TestDesc{1}(13:end)}; end
+
+in_struct.TestFreq = HDFfileAScontrol('getannotations',filename,'file_desc','$$TestFreq$$');
+if ~isempty(in_struct.TestFreq), in_struct.TestFreq = {in_struct.TestFreq{1}(13:end)}; end
+
+in_struct.TestDraw = HDFfileAScontrol('getannotations',filename,'file_desc','$$TestDraw$$');
+if ~isempty(in_struct.TestDraw), in_struct.TestDraw = {in_struct.TestDraw{1}(13:end)}; end
+
+in_struct.ApplName = HDFfileAScontrol('getannotations',filename,'file_label','$$ApplSrcplimt$$');
+if ~isempty(in_struct.ApplSrcplimt), in_struct.ApplSrcplimt = {in_struct.ApplSrcplimt{1}(17:end)}; end
+
+switch code
+
+%------------------------------------------------------------------------------------------
+case 'get'
+    an_struct = in_struct;
+
+%------------------------------------------------------------------------------------------
+case 'disp'
+   disp(' ')
+ 
+   if strcmp(in_struct.ApplName,'Stationary NAH') 
+       disp('    Application : Stationary NAH')
+       disp(' ')
+       disp(['  Désignation de l''essai (nom court) :  ' in_struct.TestLabe{:}])
+       disp(['                     Date de l''essai :  ' in_struct.TestDate{:}])
+       disp(['           Nom de l''essai (nom long) :  '])
+       txtcell = textnwrap(in_struct.TestName,64);
+       for ii=1:length(txtcell), disp(['                ' txtcell{ii}]), end
+       disp(['              Description de l''essai :  '])
+       txtcell = textnwrap(in_struct.TestDesc,64);       
+       for ii=1:length(txtcell), disp(['                ' txtcell{ii}]), end
+       disp(' ')
+       disp('   Paramètres de l''essai')
+       disp(['     Coord. point sur plan source [m] :  ' in_struct.ApplSrcp{:}])
+       disp(['                     Température [°C] :  ' in_struct.ApplTemp{:}])
+       disp(' ')
+       disp(['  Note : La distance source-hologramme est calculée à partir des coordonnées d''un point sur'])
+       disp(['         le plan source en m (ex: [0 0 -0.04] pour un plan hologramme positionné à z = 0 '])
+       disp(['         constant et situé à une distance de 4 cm du plan source).'])
+       disp(['         La température sera supposée etre de 20°C si elle n''est pas spécifiée. '])
+   else
+       disp('    Le nom de l''application associée à ce fichier n''est pas Stationary NAH')
+       disp(['                 Application associée :  ' in_struct.ApplName{:}])
+   end
+   disp(' ')
+   if nargout>0, an_struct = in_struct; end
+
+%------------------------------------------------------------------------------------------
+case 'modification'
+   disp(' ')
+   if isempty(in_struct.ApplName)|strcmp(in_struct.ApplName,'Stationary NAH') 
+       disp('    Application : Stationary NAH')
+       disp(['        Fichier : ' filename])
+       disp(' ')
+       disp('    MODIFICATION DES INFORMATIONS ENREGISTREES DANS LE FICHIER')
+       disp(' ')
+       
+       if isempty(in_struct.ApplName)
+           rep = input(' ¤ Voulez-vous associer l''application Stationary NAH à ce fichier ? [non]/oui : ','s');
+           if isempty(rep), rep = 'n'; end
+           if strcmp(lower(rep(1)),'o')
+               out_struct.ApplName = {'Stationary NAH'}; 
+               store(filename,'file_label',0,'$$ApplName$$',out_struct.ApplName,1);    
+               if isempty(in_struct.ApplVers), delete = 0; else, delete = 1; end
+               out_struct.ApplVers = ApplVers;
+               store(filename,'file_label',delete,'$$ApplVers$$',out_struct.ApplVers,0);    
+           end
+       end
+       %-- TestLabe
+       out_struct = enter_an(filename,'file_label','$$TestLabe$$','la Désignation de l''essai (nom court)',in_struct);
+       %-- TestDate
+       out_struct = enter_an(filename,'file_label','$$TestDate$$','la Date de l''essai (AAAA/MM/JJ)',in_struct);
+       %-- TestName
+       out_struct = enter_an(filename,'file_label','$$TestName$$','le Nom de l''essai (nom long)',in_struct);
+       %-- TestDesc
+       out_struct = enter_an(filename,'file_desc','$$TestDesc$$','la Description de l''essai',in_struct);
+       %-- ApplSrcp
+       out_struct = enter_an(filename,'file_label','$$ApplSrcp$$','la Coordonnées d''un point sur le plan source [m]',...
+                                      in_struct);
+       %-- ApplTemp
+       out_struct = enter_an(filename,'file_label','$$ApplTemp$$','la Température [°C]',in_struct);
+      
+   else
+       disp('    Le nom de l''application associée à ce fichier n''est pas Stationary NAH')
+       disp(['                          Application :  ' in_struct.ApplName{1}])
+   end
+   disp(' ')
+   
+%------------------------------------------------------------------------------------------
+case 'dlgbox'
+    if isempty(in_struct.ApplName)|strcmp(in_struct.ApplName,'Stationary NAH') 
+        name = fieldnames(in_struct);
+        for ii=1:length(name)
+            if isempty(getfield(in_struct,name{ii})), in_struct = setfield(in_struct,name{ii},{''}); end
+        end 
+        TestNameCell = textnwrap(in_struct.TestName,64); TestNameMat = str2mat(TestNameCell);
+        TestDescCell = textnwrap(in_struct.TestDesc,64); TestDescMat = str2mat(TestDescCell);
+        %NoteCell     = textnwrap( ...
+        %               ['La distance source-hologramme est calculée à partir des coordonnées d''un point sur ',...
+        %                'le plan source en m (ex: [0 0 -0.04] pour un plan hologramme positionné à z = 0 ',...
+        %                'constant et situé à une distance de 4 cm du plan source).'],64);
+        ApplSrcpText = ['The source-hologram distance is calculated starting from the coordinates of a point on ',...
+                        'the source plane in m (ex: [0 0 -0.04] for a hologram plane positioned at z = 0 ',...
+                        'constant and located at a distance of 4 cm to the source plane).'];
+        %NoteCell     = textnwrap(ApplSrcpText,64);         
+        %NoteMat = str2mat(NoteCell);
+        
+        dlgTitle = 'HDF file annotations : Stationary NAH';
+        
+        %list = {'Fichier : ',filename; ...
+        %        'Version : ',in_struct.ApplVers{:}; ...
+        %        'Désignation de l''essai (nom court) :  ',in_struct.TestLabe{:}; ...
+        %        'Date de l''essai (AAAA/MM/JJ) :  ',in_struct.TestDate{:}; ...
+        %        'Nom de l''essai (nom long) :  ',TestNameMat; ...
+        %        'Description de l''essai :  ',TestDescMat; ...
+        %        'Paramètres de l''essai - Coord. point sur plan source [m] :  ',in_struct.ApplSrcp{:}; ...
+        %        'Paramètres de l''essai - Température [°C] (défaut : 20°C) :  ',in_struct.ApplTemp{:}; ...
+        %        'Note : ',NoteMat};
+        
+        if length(TestDescCell)>5
+            TestNamePrompt = ['Test description (' num2str(length(TestDescCell)) 'lines) :  '];
+        else
+            TestNamePrompt = 'Test description :  ';
+        end
+        
+        list = {'File : ',filename; ...
+                'File version : ',in_struct.ApplVers{:}; ...
+                'Designation of the test (short name) :  ',in_struct.TestLabe{:}; ...
+                'Date of the test (AAAA/MM/JJ) :  ',in_struct.TestDate{:}; ...
+                'Test name (long name) :  ',TestNameMat; ...
+                TestNamePrompt, TestDescMat; ...
+                ['Test parameter - Coord. of a point on source plane [m] (' ApplSrcpText ') :  '],in_struct.ApplSrcp{:}; ...
+                'Test parameter - Temperature [°C] (default: 20°C) :  ',in_struct.ApplTemp{:}}; 
+                %'Note : ',NoteMat};
+       %lineNo = [1 1 1 1 length(TestNameCell)+1 length(TestDescCell)+2 1 1 length(NoteCell)];
+       
+        lineNo = [1 1 1 1         3                          5           1 1];
+       
+       answer = inputdlg(list(:,1),dlgTitle,lineNo,list(:,2));
+       
+       if ~isempty(answer)
+           %strcmp(list(:,2),answer(:))
+           if isempty(in_struct.ApplName)
+               status = store(filename,'file_label',1,'$$ApplName$$',{'Stationary NAH'},0); 
+               status = store(filename,'file_label',1,'$$ApplVers$$',ApplVers,0);
+           end
+           if ~strcmp(list{3,2},answer{3})
+               status = store(filename,'file_label',1,'$$TestLabe$$',answer(3),0);
+           end
+           if ~strcmp(list{4,2},answer{4})
+               status = store(filename,'file_label',1,'$$TestDate$$',answer(4),0);
+           end
+           if ~strcmp(list{5,2},answer{5})
+               TestName = ''; 
+               for ii=1:size(answer{5},1)
+                   textstr = answer{5}(ii,:);
+                   if ii>1&~strcmp(TestName(end),' ')&~strcmp(textstr(1),' '), TestName = [TestName ' ']; end 
+                   TestName = [TestName textstr];     
+               end
+               status = store(filename,'file_label',1,'$$TestName$$',TestName,0);
+           end
+           if ~strcmp(list{6,2},answer{6})
+               TestDesc = ''; 
+               for ii=1:size(answer{6},1)
+                   textstr = answer{6}(ii,:);
+                   if ii>1&~strcmp(TestDesc(end),' ')&~strcmp(textstr(1),' '), TestDesc = [TestDesc ' ']; end 
+                   TestDesc = [TestDesc textstr]; 
+               end
+               status = store(filename,'file_desc',1,'$$TestDesc$$',TestDesc,0);
+           end
+           if ~strcmp(list{7,2},answer{7})
+               status = store(filename,'file_label',1,'$$ApplSrcp$$',answer(7),0);
+           end
+           if ~strcmp(list{8,2},answer{8})
+               status = store(filename,'file_label',1,'$$ApplTemp$$',answer(8),0);
+           end
+       end
+       
+   end
+   an_struct = answer;
+%------------------------------------------------------------------------------------------
+end
+
+%==========================================================================================
+function status = store(filename,access_code,delete,headstring,cellstring,msg)
+%
+%   delete = 1  delete the old annotation
+%   headstring  12 char head string
+%   msg = 1     message
+%
+if delete
+    [status,errtype] = HDFfileAScontrol('delannotations',filename,access_code,headstring);
+end
+if ~iscell(cellstring), cellstring = {cellstring}; end
+str = [headstring cellstring{1}];
+[status,errtype] = HDFfileAScontrol('setannotations',filename,access_code,str);
+disp(' ')
+if status==0&msg==1
+    disp('    L''information a été correctement enregistrée dans le fichier')
+elseif status<0&msg==1 
+    disp('    Le logiciel a rencontré un problème d''enregistrement')    
+end
+disp(' ')
+
+%==========================================================================================
+function out_struct = enter_an(filename,access_code,headstring,fulldesignation,in_struct)
+%
+%  fulldesignation : ex "la Désignation de l''essai (nom court)"
+%
+       headname = headstring(3:10);
+       disp(['  ' fulldesignation(4:end) ' :  '])
+       incell = getfield(in_struct,headname);
+       if ~isempty(incell), instr = incell{:}; else, instr = ''; end
+       txtcell = textnwrap(instr,64);
+       for ii=1:length(txtcell), disp(['   ' txtcell{ii}]), end
+       disp(' ')
+       rep = input([' ¤ Voulez-vous modifier ' lower(fulldesignation) ' ? [non]/oui : '],'s');
+       disp(' ')
+       if isempty(rep), rep = 'n'; end
+       if strcmp(lower(rep(1)),'o')
+           disp(' * Entrer le texte : ')
+           str = input('','s');
+           rep = input(' ¤ Voulez-vous enregistrer la modification ? [oui]/non : ','s');
+           if isempty(rep), rep = 'o'; end
+           if ~strcmp(lower(rep(1)),'n')
+               in_struct = setfield(in_struct,headname,{str});
+               store(filename,access_code,1,headstring,{str},1);
+           end
+       end
+       disp(' ')
+       out_struct = in_struct;
+       
+%==========================================================================================
+function  txtcell = textnwrap(longstring,nchar)
+%
+%  wrap and display a long string (or cell) in a textcell
+%      dispwrap(longstring,nchar,fid)
+%      dispwrap(longstring,nchar)
+%  see if lines are \n delimited and wrap in nchar long
+%
+if isempty(longstring), longstring = ''; end           % string, cell or ''
+if ~iscell(longstring), longstring = {longstring}; end % cell: minimal {''} 
+txtcell = {}; 
+for ii=1:length(longstring)
+    work = longstring{ii};
+    if length(work)<2, work = [work '\n']; end
+    if ~strcmp(work(end-1:end),'\n'), work = [work '\n']; end
+    ind = findstr(work,'\n'); deb = 1;
+    for jj=1:length(ind)
+        fin = ind(jj) - 1;
+        wrapwork = textwrap({work(deb:fin)},nchar);
+        for kk=1:length(wrapwork), txtcell{end+1} = wrapwork{kk}; end
+        deb = fin + 3;
+    end
+end
+       

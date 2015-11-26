@@ -1,0 +1,892 @@
+function [status,errtype,hdf_struct] = struct2hdf(varargin)
+%struct2hdf
+%
+% PURPOSE
+%    Create an HDF SD file from structure info
+%
+% SYNOPSIS
+%      [status,errtype,hdf_struct] = struct2hdf(filename or f_id,hdf_struct)
+%      [status,errtype,obj_struct] = struct2hdf(objfunctionname,obj_id,obj_struct,an_id) ...,vgr_id)
+%                               objfunctionname = {'sdsstruct2sds','vdtstruct2vdt','risstruct2sds'}
+%
+% DESCRIPTION
+%        status     -> status 0 if ok or -1 if operation fail
+%        errtype    -> cell of the types of error
+%        filename   -> name of the HDF file (in this case, file is closed at the end)
+%        f_id       -> identifier of HDF file
+%        hdf_struct -> hdf structure (see makeHDFstruct) with is completed by id in output
+%
+%        an_id    -> identifier of the annotation (AN) interface  
+%        sd_id    -> identifier of HDF-SD interface  
+%        sds_id   -> identifier of a Scientific Data Set
+%        vgr_id   -> identifier of a Vgroup
+%
+%    Remark : running this function with an existing file create new objects. Warning: annotations are
+%             written again.
+%
+%    Model of necessary structure fields (others are not used)
+%    Structure of the HDF-SD 
+%           type: 'HDF file' or 'HDF Scientific Data' (HDF-SD file) 
+%     attributes: [nx1 struct] -> attributes (optional) 
+%                                 ex: hdf_struct.attributes.attrname = value (string, scalar, vector ...)
+%    annotations: [sx1 struct] -> file annotations (optional) 
+%                                 ex: hdf_struct.annotations.label = cell of strings
+%                                 ex: hdf_struct.annotations.description = cell of strings
+%      children: [px1 struct] -> Vgroup, Vdata, SDS, DF24, DFR8 
+%
+%    p sub-structure of a Vgroup connected to children(ii)
+%          type: 'Vgroup'
+%    properties: [mx1 struct] -> parameters
+%              vgr_struct.properties.name = name;
+%              vgr_struct.properties.class = class;
+%    attributes: [nx1 struct] -> attributes  (optional)
+%              vgr_struct.attributes.attrname = value (string, scalar, vector ...)
+%      children: [qx1 struct] -> Vgroup, Vdata, SDS, AN, DF24, DFR8
+%
+%         automatic setting -> vgr_struct.id = vgr_id 
+%                              vgr_struct.properties.tagname = hdfhd('gettagsname',tag)
+%                              vgr_struct.properties.ref = ref
+%
+%    p sub-structure of a Vdata connected to children(ii)
+%          type: 'Vdata'
+%    properties: [mx1 struct] -> parameters
+%              vdt_struct.properties.name = name;
+%              vdt_struct.properties.class = class;
+%              sds_struct.properties.datatype = datatype;   (optional : default = automatic 'double' or 'char')
+%              sds_struct.properties.data = cell;           (optional)
+%    attributes: [nx1 struct] -> attributes  (optional)
+%              vdt_struct.attributes.attrname = value (string, scalar, vector ...) for Vdata
+%              vdt_struct.attributes.fieldname.attrname = value (string, scalar, vector ...) for Vdata field
+%      children: [qx1 struct] -> [] or AN
+%
+%         automatic setting -> vdt_struct.id = vdt_id 
+%                              vdt_struct.properties.tagname = hdfhd('gettagsname',tag)
+%                              vdt_struct.properties.ref = ref
+%
+%    p sub-structure of a Raster Image Set connected to children(ii)
+%          type: 'RIS24' or 'RIS8'
+%    properties: [mx1 struct] -> parameters
+%              ris_struct.properties.compresstype = 'none', 'jpeg', 'rle', 'imcomp' (optional : default = 'none')
+%              ris_struct.properties.quality = qualityfactor (1 to 100) or [qualityfactor forcebaseline (0 or 1)] 
+%                                                        (optional : default = [100 1])
+%              ris_struct.properties.data = 3D array (RIS24: RGB Matlab format) or 2D array (RIS8: 0 to 255)
+%              ris_struct.properties.colormap = colormap (for RIS8 only)
+%      children: [qx1 struct] -> [] or AN
+%
+%         automatic setting -> ris_struct.properties.tagname = 'DFTAG_RIG'
+%                              ris_struct.properties.ref = ref
+%
+%    p sub-structure of a Scientific Data Set connected to children(ii)
+%          type: 'Scientific Data Set'
+%    properties: [mx1 struct] -> parameters
+%              sds_struct.properties.name = ds_name;
+%              sds_struct.properties.size = fliplr(ds_dims); [ Matlab style ]
+%              sds_struct.properties.datatype = ds_type;   (optional : default = 'double')
+%              sds_struct.properties.data = array;         (optional)
+%    attributes: [nx1 struct] -> attributes  (optional)
+%              sds_struct.attributes.attrname = value (string, scalar, vector ...)
+%   annotations: [sx1 struct] -> file annotations (optional) 
+%              sds_struct.annotations.label = cell of strings
+%              sds_struct.annotations.description = cell of strings
+%      children: [qx1 struct] -> dimensions in Matlab order
+%
+%         automatic setting -> sds_struct.id = sds_id 
+%                              sds_struct.properties.tagname = 'DFTAG_NDG'
+%                              sds_struct.properties.ref = ref
+%
+%   q sub-structures of dimensions of the Data Set
+%              sds_struct.children(ndim).type = 'dimension';
+%              sds_struct.children(ndim).properties.name = name;
+%              sds_struct.children(ndim).properties.axevector = scale;
+%              sds_struct.children(ndim).properties.datatype = data_type; (optional : default = 'double')
+%              sds_struct.children(ndim).attributes.attrname = value (optional : string, scalar, vector ...)
+%
+%   
+% SEE ALSO
+%     hdfml('listinfo'), hdfml('closeall')   
+%   
+
+% EXAMPLES   
+%
+% ALGORITHM
+%    
+% REFERENCES
+%    Matlab, Using Matlab, Version 6, 2002 (R13).
+%
+% Comments: 
+%   Output errtype : 'err SD write' 'err SD create' 'unknow HDF struct' 'err SD setattr'
+%                    see also function sdsstruct2sds
+%
+% Matlab Toolbox functions used: find_file_id, seterr
+%
+% External librairies and languages: none
+%
+% Test procedure: none
+%
+% Copyright 1997-2006 VisualVibroAcoustics
+% jcp 12/11/02                                                                                       version 04/10/03 
+%--------------------------------------------------------------------------------------------------------------------
+%  name  |   date   |  modification description
+%--------------------------------------------------------------------------------------------------------------------
+%  jcp   | 04/10/03 |  Scientific Data Set : add possibility to code Matlab array with singletons        
+%        |          |  Annotations : active the interface for file and data 
+%--------------------------------------------------------------------------------------------------------------------
+%        |          |
+%--------------------------------------------------------------------------------------------------------------------
+show = 0;
+
+%--validity control 1
+%
+nargchk(2,4,nargin);
+nargchk(0,3,nargout);
+status = 0; errtype = {};
+if nargin>2     % special case for use internal functions
+    obj_functionname = varargin{1};
+    obj_id = varargin{2};
+    obj_struct = varargin{3};
+    an_id = varargin{4};
+    if nargin>4, vgr_id = varargin{5}; else, vgr_id = 0; end
+    [status,errtype,hdf_struct] = feval(obj_functionname,obj_id,obj_struct,an_id,vgr_id);
+    return 
+end    
+var1 = varargin{1};
+hdf_struct = varargin{2};
+
+%--validity control 2
+%
+if ischar(var1)
+    [f_id,err_type,filename] = find_file_id(var1,'create');
+    [status,errtype] = seterr(f_id,status,errtype,'struct2hdf: fail create',show);
+    if f_id==0                  % find_file_id: exist
+        [f_id,err_type,filename] = find_file_id(var1,'write');
+        [status,errtype] = seterr(f_id,status,errtype,'struct2hdf: fail write',show);
+        create_flag = 0;
+    else
+        create_flag = 1;
+    end
+    close_flag = 1;
+else
+    [filename,access_mode,attach,stat] = hdfh('fidinquire',var1); 
+    if stat==0
+        f_id = var1; create_flag = 0;
+    else
+        [status,errtype] = seterr(stat,status,errtype,'struct2hdf: fail access',show);
+        f_id = -1;
+    end
+    close_flag = 0;
+end
+
+%====================================================================================================================
+if f_id>0
+    %
+    %-- open the HDF interfaces
+    %
+    % start SD interface (Scientific Data Group)
+    sd_id = hdfsd('start',filename,'write');   
+    [status,errtype] = seterr(sd_id,status,errtype,'struct2hdf: fail SDstart',show);
+    hdf_struct.id = sd_id;  
+    % start AN interface (Annotations)
+    an_id = hdfan('start',f_id);
+    [status,errtype] = seterr(an_id,status,errtype,'struct2hdf: fail ANstart',show);
+
+%-- process SD structure 
+%
+if strcmp(hdf_struct.type,'HDF Scientific Data')
+    if isfield(hdf_struct,'children')
+        ndatasets = length(hdf_struct.children);
+        for ii=1:ndatasets
+            [stat,sds_err] = sdsstruct2sds(sd_id,hdf_struct.children(ii),an_id);
+            [status,errtype] = seterr(stat,status,errtype,sds_err,show);
+        end
+    end
+    [stat_attr,errtypelist] = setattributes(hdf_struct);
+    [status,errtype] = seterr(stat_attr,status,errtype,errtypelist,show);
+    % scientific data group annotations        
+    [stat,errtypelist] = setannotations(hdf_struct,an_id,[],[]);
+    [status,errtype] = seterr(stat,status,errtype,errtypelist,show);
+
+%-- process Vgroup structure 
+%    
+elseif strcmp(hdf_struct.type,'HDF file')
+    %
+    %-- open interfaces
+    stat = hdfv('start',f_id);      % start Vgroup interface
+    an_id = hdfan('start',f_id);    % start AN interface
+    
+    if isfield(hdf_struct,'children')
+        parent_type = 'HDF file'; parent_id = f_id;
+        ntopchildren = length(hdf_struct.children);
+        pointer = 0;
+        while ~isempty(pointer)
+            pointer = findnextchildren(hdf_struct,'children',pointer);
+            childrenstruct = getchildren(hdf_struct,'children',pointer);
+            
+            switch lower(childrenstruct.type)
+            case 'vgroup'
+                vgr_ref = -1;
+                vgr_id = hdfv('attach',f_id,vgr_ref,'w');
+                [status,errtype] = seterr(vgr_id,status,errtype,'struct2hdf: Vattach',show);
+                if vgr_id>0
+                    % -- add vgr_id, tag and ref in hdf_struct
+                    childrenstruct.id = vgr_id;
+                    tag = hdfv('Querytag',vgr_id);
+                    childrenstruct.properties.tagname = hdfhd('gettagsname',tag);
+                    childrenstruct.properties.ref = hdfv('Queryref',vgr_id);
+                    hdf_struct = setchildren(hdf_struct,'children',pointer,childrenstruct);
+                end
+                stat = hdfv('setclass',vgr_id,childrenstruct.properties.class);
+                stat = hdfv('setname',vgr_id,childrenstruct.properties.name);
+                [stat_attr,errtypelist] = setattributes(hdf_struct);
+                [status,errtype] = seterr(stat_attr,status,errtype,errtypelist,show);
+                [parent_id,tag,ref,parent_errtype] = getParentIdTagRef('Vgroup',hdf_struct,pointer);
+                [status,errtype] = seterr(parent_id,status,errtype,parent_errtype,show);
+                if parent_id>0
+                    ref = hdfv('insert',parent_id,vgr_id);
+                    % if ref .... ?, [status,errtype] = seterr(-1,status,errtype,'struct2hdf: Vinsert',show);
+                end
+                % vgroup can have several children and endaccess are made later
+                
+            case 'vdata'
+                [parent_id,tag,ref,parent_errtype] = getParentIdTagRef('Vgroup',hdf_struct,pointer);
+                [status,errtype] = seterr(parent_id,status,errtype,parent_errtype,show);
+                if parent_id>-1
+                    [stat,vdt_err,childrenstruct] = vdtstruct2vdt(f_id,childrenstruct,parent_id);
+                    [status,errtype] = seterr(stat,status,errtype,vdt_err,show);
+                    hdf_struct = setchildren(hdf_struct,'children',pointer,childrenstruct);
+                end
+                
+            case 'scientific data set'
+                [parent_id,tag,ref,parent_errtype] = getParentIdTagRef('Vgroup',hdf_struct,pointer);
+                [status,errtype] = seterr(parent_id,status,errtype,parent_errtype,show);
+                if parent_id>-1
+                    [stat,sds_err,childrenstruct] = sdsstruct2sds(sd_id,childrenstruct,an_id,parent_id);
+                    [status,errtype] = seterr(stat,status,errtype,sds_err,show);
+                    hdf_struct = setchildren(hdf_struct,'children',pointer,childrenstruct);
+                end
+                
+            case {'RIS24','RIS8'}   % Raster Image Set (DFR8 obsolete)
+                [parent_id,tag,ref,parent_errtype] = getParentIdTagRef('Vgroup',hdf_struct,pointer);
+                [status,errtype] = seterr(parent_id,status,errtype,parent_errtype,show);
+                if parent_id>-1
+                    [stat,ris_err,childrenstruct] = risstruct2sds(filename,childrenstruct,parent_id);
+                    [status,errtype] = seterr(stat,status,errtype,ris_err,show);
+                    hdf_struct = setchildren(hdf_struct,'children',pointer,childrenstruct);
+                end
+
+            case 'annotation'
+                % not used: inclued in file and sd
+            end % switch
+        end % while
+    else
+        [status,errtype] = seterr(-1,status,errtype,'struct2hdf: bad HDF struct',show);
+    end % if isfield
+    % -- global attributes
+    [stat_attr,errtypelist] = setattributes(hdf_struct);
+    [status,errtype] = seterr(stat_attr,status,errtype,errtypelist,show);
+
+    % -- close interfaces
+    pointer = 0;
+    while ~isempty(pointer)
+        pointer = findnextchildren(hdf_struct,'children',pointer);
+        childrenstruct = getchildren(hdf_struct,'children',pointer);
+        if strcmp(lower(childrenstruct.type),'vgroup')&~isempty(childrenstruct.id)
+            stat = hdfv('detach',childrenstruct.id);
+        end
+    end        
+    stat = hdfv('end',f_id);
+    stat = hdfan('end',f_id);
+    
+%-- unknow HDF structure 
+%    
+else
+   [status,errtype] = seterr(-1,status,errtype,'struct2hdf: unknow HDF struct',show);   
+end  
+
+%-- close SD interface and H interface 
+%    
+% close SD interface (Scientific Data Group)
+stat = hdfsd('end',sd_id);    
+[status,errtype] = seterr(stat,status,errtype,'struct2hdf: SD end',show);   
+% close AN interface (Annotations)
+stat = hdfan('end',an_id);
+[status,errtype] = seterr(stat,status,errtype,'struct2hdf: AN end',show);
+% clos HDF file interface
+if close_flag==1
+    stat = hdfh('close',f_id); 
+    [status,errtype] = seterr(stat,status,errtype,'struct2hdf: H close',show);
+end
+
+end % if f_id<0
+%====================================================================================================================
+  
+%++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+function [status,errtype,sds_struct] = sdsstruct2sds(sd_id,sds_struct,an_id,vgr_id)
+%
+%    Create a SDS from an specific sub-structure
+%
+%    sd_id      -> identifier of sd interface 
+%    sds_id     -> identifier of a Data Set
+%    an_id      -> identifier of AN interface
+%    vgr_id     -> identifier of the parent Vgroup (no parent Vgroup if vgr_id = 0)
+%    status     -> status 0 if ok or -1 if operation fail
+%    errtype    -> cell of the types of error
+%    sds_struct -> structure of the Data Set with the fields :
+%          type: 'scientific data set'
+%            id: 32111
+%    properties: [mx1 struct] -> parameter fields: name, datatype (default: 'double'), 
+%                                data (array in matlab style (default: []), size (matlab style)
+%    attributes: [nx1 struct] -> attributes (FillValue, etc. or user defined) 
+%      children: [px1 struct] -> dimensions (axe) in Matlab order
+%       special: []
+%
+%--------------------------------------------------------------------------------------------------------------------
+%  name  |   date   |  modification description
+%--------------------------------------------------------------------------------------------------------------------
+%        |           |
+%--------------------------------------------------------------------------------------------------------------------
+
+if nargin<4, vgr_id = 0; end    %-- is not in a Vgroup
+status = 0; errtype = {};
+%--control of the structure type
+if ~isfield(sds_struct,'type')|~strcmp(lower(sds_struct.type),'scientific data set')
+    [status,errtype] = seterr(-1,status,errtype,'struct2hdf: not a SDS children');
+    return,
+end
+sds_struct = sds_singletonfilter(sds_struct);
+
+%--use structure information to set HDF parameter (remove singletons)
+ds_name = sds_struct.properties.name;
+ds_dims = fliplr(sds_struct.properties.size);   % Matlab style in struct
+ds_rank = length(ds_dims);
+ds_type = sds_struct.properties.datatype;
+
+%--find sds index from data set id and name
+sds_index = hdfsd('nametoindex',sd_id,ds_name);
+
+%-- if already exist : control its dim and rank
+%   if don't exist   : create it
+if sds_index>=0   % the sd_name data set exist
+    sds_id = hdfsd('select',sd_id,sds_index);
+    [status,errtype] = seterr(sds_id,status,errtype,'struct2hdf: DSselect');
+    if sds_id>0
+        accesscode = 'select';
+        [ds_name1,ds_rank1,ds_dims1,ds_type1,nattrs,stat] = hdfsd('getinfo',sds_id);
+        if stat<0|ds_rank~=ds_rank1|sum(ds_dims~=ds_dims1)~=0|~strcmp(ds_type,ds_type1)
+            stat = hdfsd('endaccess',sds_id); sds_id = -1;
+            [status,errtype] = seterr(sds_id,status,errtype,'struct2hdf: unmatched existing DS'); 
+        end
+    end
+else    
+    sds_id = hdfsd('create',sd_id,ds_name,ds_type,ds_rank,ds_dims);     % create a HDF-SD Data Set
+    if sds_id>0, accesscode = 'create'; end
+    [status,errtype] = seterr(sds_id,status,errtype,'struct2hdf: DScreate'); 
+end
+
+if sds_id>0
+    sds_struct.id = sds_id;    
+    sds_struct.properties.ref = hdfsd('idtoref',sds_id);
+    sds_struct.properties.tagname = 'DFTAG_SD';     % 'DFTAG_NDG' don't run
+    tag = hdfml('tagnum',sds_struct.properties.tagname);
+
+
+    %--create child for dimensions
+    if sds_id>0&isfield(sds_struct,'children')
+        ndims = length(sds_struct.children);
+        if ndims~=0&ndims~=ds_rank, [status,errtype] = seterr(-1,status,errtype,'struct2hdf: bad DS dim'); end
+        stat_dim = 0;
+        stat_scale = 0;
+        stat_axe = 0;
+        stat_dimattr = 0;
+        index = 0; 
+        for ii=ndims:-1:1
+            dim_id = hdfsd('getdimid',sds_id,index);
+            if ~isempty(sds_struct.children(ii).properties.name)
+                stat_set = hdfsd('setdimname',dim_id,sds_struct.children(ii).properties.name);
+            end
+            if isfield(sds_struct.children(ii).properties,'axevector')
+                scale = sds_struct.children(ii).properties.axevector;
+            else
+                scale  = [];
+            end
+            if ~isempty(scale)
+                if sds_struct.properties.size(ii)~=length(scale), stat_axe = -1; end
+                stat = hdfsd('setdimscale',dim_id,scale);
+                if stat<0, stat_scale = -1; end
+            end
+            [stat,errtypelist] = setattributes(sds_struct.children(ii));
+            if stat<0, stat_dimattr = -1; end
+
+            if stat_set==0
+                index = index + 1; 
+            else
+                stat_dim = -1;
+            end
+        end  % for ii
+        [status,errtype] = seterr(stat_dim,status,errtype,'struct2hdf: DSsetdimname');
+        [status,errtype] = seterr(stat_axe,status,errtype,'struct2hdf: unmatched DS scale');
+        [status,errtype] = seterr(stat_scale,status,errtype,'struct2hdf: DSsetdimscale'); 
+        [status,errtype] = seterr(stat_dimattr,status,errtype,'struct2hdf: DSdimsetattr');    
+    end  % isfield children
+    
+    %-- set attributes
+    [stat_attr,errtypelist] = setattributes(sds_struct);
+    [status,errtype] = seterr(stat_attr,status,errtype,errtypelist);
+
+    %-- set data annotations
+    if an_id>0
+        [stat,errtypelist] = setannotations(sds_struct,an_id,tag,sds_struct.properties.ref);
+        [status,errtype] = seterr(stat,status,errtypelist,errtype);
+    end
+    
+    %-- set data
+    data = sds_struct.properties.data;
+    if sds_id>0&~isempty(data)
+        if sum(size(data)~=fliplr(ds_dims))==0
+            start = zeros(1,ds_rank);        % start at the beginning
+            stride = [];                     % write every element
+            edges = ds_dims;                 % stop at the end
+            stat = hdfsd('writedata',sds_id,start,stride,edges,data);
+            [status,errtype] = seterr(stat,status,errtype,'struct2hdf: DSwritedata');
+        else
+            [status,errtype] = seterr(-1,status,errtype,'struct2hdf: unmatched DS array size');  
+        end
+    end
+
+    %-- attache to Vgroup
+    if vgr_id~=0                             % put SDS in Vgroup if vgr_id ~ 0
+        stat_vgr = hdfv('addtagref',vgr_id,tag,sds_struct.properties.ref);
+        [status,errtype] = seterr(stat_vgr,status,errtype,'struct2hdf: DSadd2vgr');
+    end
+
+    stat_end = hdfsd('endaccess',sds_id);               % close HDF Data Set
+    [status,errtype] = seterr(stat_end,status,errtype,'struct2hdf: DSendaccess');
+end % if sds_id>0
+
+%--------------------------------------------------------------------------------------------------------------------
+%++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+function sds_struct = sds_singletonfilter(sds_struct)
+%
+%    Allow possibility to store array with singletons (see Matlab documentation)
+%
+%    input sds_struct -> structure of the Data Set which can have singleton dimensions and with the fields :
+%          type: 'scientific data set'
+%            id: 32111
+%    properties: [mx1 struct] -> parameter fields: name, datatype (default: 'double'), 
+%                                data (array in matlab style (default: []), size (matlab style)
+%    attributes: [nx1 struct] -> attributes (FillValue, etc. or user defined) 
+%      children: [px1 struct] -> dimensions (axe) in Matlab order
+%       special: []
+%
+%    output sds_struct -> structure of the Data Set with the sames fields but where the singleton dimensions
+%                         are removed. outsds_struct can be used with sdsstruct2sds
+%
+%   Remark : Matlab offers the possibility to use array with singletons but
+%            it is not possible with HDF. To store this information the input
+%            sds_struct decribes the Matlab data and the output sds_struct
+%            returns a structure matching HDF requirements. Ex:
+%             input -> sds_struct.properties.size: [5 1 2]
+%                      sds_struct.children(1).properties.name: 'Frequency'
+%                      sds_struct.children(1).properties.axevector: [2 4 6 8 10]
+%                      sds_struct.children(2).properties.name: 'Delay'
+%                      sds_struct.children(2).properties.axevector: 0.25
+%                      sds_struct.children(3).properties.name: 'Reference'
+%                      sds_struct.children(3).properties.axevector: [1 2]
+%            output -> sds_struct.properties.size: [5 2]
+%                      sds_struct.properties.data = squeeze(insds_struct.properties.data)
+%                      sds_struct.children(1).properties.name: 'Frequency'
+%                      sds_struct.children(1).properties.axevector: [2 4 6 8 10]
+%                      sds_struct.children(2).properties.name: 'Reference'
+%                      sds_struct.children(2).properties.axevector: [1 2]
+%                      sds_struct.attributes.matlabsize : [5 1 2]
+%                      sds_struct.attributes.singletonnames: '$$Delay' or ['Delay' '$$' others ...]
+%                      sds_struct.attributes.singletonaxevalues: 0.25 or [0.25 others ...]
+%   NB : If there are several singletons, $$ is the separator for singletonnames
+%      
+% Copyright 1997-2006 VisualVibroAcoustics
+%   jcp    01/10/03
+%--------------------------------------------------------------------------------------------------------------------
+%  name  |   date    |  modification description
+%--------------------------------------------------------------------------------------------------------------------
+%        |           |
+%--------------------------------------------------------------------------------------------------------------------
+
+%--find singleton orders
+arraysize = sds_struct.properties.size;
+ind = find(arraysize==1);
+
+if ~isempty(ind)
+    singletonnames = '';
+    singletonaxevalues = [];
+    %--compute new attributes values
+    for ii= length(ind):-1:1
+        singletonnames =  ['$$' sds_struct.children(ind(ii)).properties.name singletonnames];
+        if isfield(sds_struct.children(ind(ii)).properties,'axevector')
+            value = sds_struct.children(ind(ii)).properties.axevector;
+        else
+            value = 0;
+        end
+        singletonaxevalues = [value singletonaxevalues];
+        arraysize(ind(ii)) = [];
+        sds_struct.children(ind(ii)) = [];
+    end
+    %--set structure fields
+    sds_struct.attributes.matlabsize = sds_struct.properties.size;
+    sds_struct.attributes.singletonnames = singletonnames;
+    sds_struct.attributes.singletonaxevalues = singletonaxevalues;
+    sds_struct.properties.size = arraysize;
+    if ~isempty(sds_struct.properties.data), sds_struct.properties.data = squeeze(sds_struct.properties.data); end
+end
+
+%--------------------------------------------------------------------------------------------------------------------
+
+%++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+function [status,errtype,vdt_struct] = vdtstruct2vdt(f_id,vdt_struct,vgr_id)
+%
+%    Create a Vdata from an specific sub-structure
+%
+%    f_id       -> identifier of HDF file 
+%    vdt_id     -> identifier of the Vdata
+%    vgr_id     -> identifier of the parent Vgroup (no parent Vgroup if vgr_id = 0)
+%    errtype    -> cell of the types of error
+%    vdt_struct -> structure of the Vdata with the fields :
+%          type: 'vdata'
+%            id: 32111
+%    properties: [mx1 struct] -> parameters
+%    attributes: [nx1 struct] -> attributes
+%      children: [px1 struct] -> (optional : annotation)
+%       special: []
+%
+%    properties: [mx1 struct] -> parameters
+%              vdt_struct.properties.name = name;    name of the vdata ('prb','aux','ref', ...) 
+%              vdt_struct.properties.class = class;  ('sensor', chanel, ...)
+%              sds_struct.properties.datatype = datatype;   (optional : default = automatic 'double' or 'char')
+%              sds_struct.properties.data = cell;           (optional)
+%    attributes: [nx1 struct] -> attributes  (optional)
+%              vdt_struct.attributes.attrname = value (string, scalar, vector ...) for Vdata
+%              vdt_struct.attributes.fieldname.attrname = value (string, scalar, vector ...) for Vdata field
+%      children: [qx1 struct] -> [] or AN
+%
+%         automatic setting -> vdt_struct.id = vdt_id 
+%                              vdt_struct.properties.tagname = hdfhd('gettagsname',tag)
+%                              vdt_struct.properties.ref = ref
+%           
+%
+%--------------------------------------------------------------------------------------------------------------------
+%  name  |   date   |  modification description
+%--------------------------------------------------------------------------------------------------------------------
+%        |          |  
+%--------------------------------------------------------------------------------------------------------------------
+
+if nargin==2, vgr_id = 0; end 
+status = 0; errtype = {};
+
+if ~isfield(vdt_struct,'type')|~strcmp(lower(vdt_struct.type),'vdata')
+    [status,errtype] = seterr(-1,status,errtype,'struct2hdf: not a Vdata children');
+    return,
+end
+
+vdt_ref = -1;                              % to create a new vdata
+vdt_id = hdfvs('attach',f_id,vdt_ref,'w');
+[status,errtype] = seterr(vdt_id,status,errtype,'struct2hdf: VSattach');
+if vdt_id>0
+    % -- add vdt_id, tag and ref in hdf_struct
+    vdt_struct.id = vdt_id;
+    tag = hdfvs('Querytag',vdt_id);
+    vdt_struct.properties.tagname = hdfhd('gettagsname',tag);
+    vdt_struct.properties.ref = hdfvs('Queryref',vdt_id);
+    % hdf_struct = setchildren(hdf_struct,'children',pointer,vdt_struct);
+end
+stat = hdfv('setclass',vdt_id,vdt_struct.properties.class);
+stat = hdfv('setname',vdt_id,vdt_struct.properties.name);
+if isfield(vdt_struct.properties,'data')
+    datacell = vdt_struct.properties.data;
+else
+    datacell = [];
+end
+if isfield(vdt_struct.properties,'datatype')
+    datatype = vdt_struct.properties.datatype;
+else
+    datatype = [];
+end
+if iscell(datacell)
+    [nfields,n] = size(datacell);
+    if n==2
+        fieldname = datacell(:,1);
+        data = datacell(:,2);
+        for ii=1:nfields
+            datafield = data{ii};
+            [order(ii),nrecords] = size(datafield);
+            if isempty(datatype)
+                if ischar(datafield{1,1}), datatype{ii} = 'char'; 
+                elseif isnumeric(datafield{1,1}), datatype{ii} = 'double'; end
+            end 
+        end
+        if iscell(datatype)&length(datatype)==nfields
+            stat_field = 0;
+            for ii=1:nfields
+                stat = hdfvs('fdefine',vdt_id,fieldname{ii},datatype{ii},order(ii));
+                if stat==-1, stat_field = -1; end
+            end
+            [status,errtype] = seterr(stat_field,status,errtype,'struct2hdf: VSfdefine');
+            count = hdfvs('write',vdt_id,data);
+        else
+            [status,errtype] = seterr(-1,status,errtype,'struct2hdf: bad data cell');     
+        end
+    else
+        [status,errtype] = seterr(-1,status,errtype,'struct2hdf: bad datatype'); 
+    end % if n    
+end % if iscell
+[stat_attr,errtypelist] = setattributes(vdt_struct);
+[status,errtype] = seterr(stat_attr,status,errtype,errtypelist);
+
+if vgr_id>0
+    ref = hdfv('insert',vgr_id,vdt_id);
+   % if ref .... ?, [status,errtype] = seterr(-1,status,errtype,'struct2hdf: Vinsert');
+end
+stat = hdfvs('detach',vdt_id);
+[status,errtype] = seterr(vdt_id,status,errtype,'struct2hdf: VSdetach');
+
+%--------------------------------------------------------------------------------------------------------------------
+%++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+function [status,errtype,ris_struct] = risstruct2sds(filename,ris_struct,vgr_id)
+%
+%    Create a RIS for DF24 or DFR8 image from an specific sub-structure
+%
+%    filename   -> name of the HDF file 
+%    ris_id     -> identifier of the RIS
+%    vgr_id     -> identifier of the parent Vgroup (no parent Vgroup if vgr_id = 0)
+%    errtype    -> cell of the types of error
+%    ris_struct -> structure of the RIS with the fields :
+%          type: 'ris24' or 'ris8'
+%            id: 32111
+%    properties: [mx1 struct] -> parameters
+%      children: [px1 struct] -> (optional : annotation)
+%       special: []
+%           ris_struct.properties.compresstype  -> 'none','jpeg','rle','imcomp'
+%           ris_struct.properties.quality
+%           ris_struct.properties.ref
+%           ris_struct.properties.tagname       -> 'DFTAG_RIG'
+%           ris_struct.properties.data
+%
+%--------------------------------------------------------------------------------------------------------------------
+%  name  |   date   |  modification description
+%--------------------------------------------------------------------------------------------------------------------
+%        |          |  
+%--------------------------------------------------------------------------------------------------------------------
+
+if nargin==2, vgr_id = 0; end 
+status = 0; errtype = {};
+
+if ~isfield(ris_struct,'type')|~strcmp(lower(ris_struct.type),'ris24')|~strcmp(lower(ris_struct.type),'ris8')
+    [status,errtype] = seterr(-1,status,errtype,'struct2hdf: not a RIS children');
+    return,
+end
+
+if isfield(ris_struct.properties,'data')&~isempty(ris_struct.properties.data)
+   if isfield(ris_struct.properties,'compresstype')
+       compresstype = ris_struct.properties.compresstype;
+       if strcmp(lower(compresstype),'jpeg')
+           if isfield(ris_struct.properties,'quality')&~isempty(ris_struct.properties.quality')
+              quality = ris_struct.properties.quality;
+              qualityfactor = quality(1); if qualityfactor<1|qualityfactor>100, qualityfactor = 100; end
+              if length(quality)==1
+                  forcebaseline = 1;
+              else
+                  forcebaseline = quality(2);
+                  if forcebaseline<0|forcebaseline>1, forcebaseline = 1; end
+              end
+          else
+              qualityfactor = 100; forcebaseline = 1;
+          end
+      elseif ~strcmp(lower(compresstype),'rle')&~strcmp(lower(compresstype),'imcomp')
+          compresstype = 'none';
+      end
+  else
+      compresstype = 'none';
+  end
+  data = ris_struct.properties.data;
+  if strcmp(lower(ris_struct.type),'ris24')
+      width = size(data,2); height = size(data,1);    % ref to RGB Matlab format
+      stat = hdfdf24('setdims',width,height);
+      interlace = 'pixel';
+      if strcmp(interlace,'pixel')
+          RGB = permute(data,[3 2 1]);
+      elseif strcmp(interlace,'line')
+          RGB = permute(data,[3 1 2]);
+      elseif strcmp(interlace,'component')
+          RGB = permute(data,[2 1 3]);
+      end
+      stat = hdfdf24('setil',interlace);
+      if strcmp(lower(compresstype),'jpeg')
+          stat = hdfdf24('setcompress',compresstype,qualityfactor,forcebaseline);
+      else
+          stat = hdfdf24('setcompress',compresstype);
+      end
+      stat = hdfdf24('addimage',filename,RGB);
+      ris_struct.properties.ref = hdfdf24('lastref');
+      ris_struct.properties.tagname = 'DFTAG_RIG'; 
+  else % 'ris8'
+      if strcmp(lower(compresstype),'jpeg')
+          stat = hdfdfr8('setcompress',compresstype,qualityfactor,forcebaseline);
+      else
+          stat = hdfdfr8('setcompress',compresstype);
+      end
+      stat = hdfdfr8('addimage',filename,data);
+      ris_struct.properties.ref = hdfdfr8('lastref');
+      ris_struct.properties.tagname = 'DFTAG_RIG'; 
+  end
+  [status,errtype] = seterr(stat,status,errtype,'struct2hdf: DFxxaddimage');
+  
+  if vgr_id~=0                             % put SDS in Vgroup if vgr_id ~ 0
+    tag = hdfml('tagnum',ris_struct.properties.tagname);
+    stat_vgr = hdfv('addtagref',vgr_id,tag,ris_struct.properties.ref);
+    [status,errtype] = seterr(stat_vgr,status,errtype,'struct2hdf: DSadd2vgr');
+  end
+
+end % if isfield
+
+%--------------------------------------------------------------------------------------------------------------------
+
+%++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+function [status,errtypelist] = setattributes(obj_struct)
+%
+% Add attibutes to an hdf object
+% 
+status = 0; errtypelist = {};
+if isfield(obj_struct,'id'), id = obj_struct.id; else, id = []; end 
+
+if ~isempty(id)&id>0&isfield(obj_struct,'attributes')&isfield(obj_struct,'type')
+    if isstruct(obj_struct.attributes);
+        attrnames = fieldnames(obj_struct.attributes);
+        nattr = length(attrnames);
+        type = obj_struct.type;
+    else
+        type = 'none';
+    end
+    
+    switch lower(type)
+    
+    case {'hdf scientific data','hdf file'}    
+        for ii=1:nattr
+            stat = hdfsd('setattr',id,attrnames{ii},getfield(obj_struct.attributes,attrnames{ii}));
+        end   
+        [status,errtypelist] = seterr(stat,status,errtypelist,'struct2hdf: SDsetattr');
+        
+    case 'vgroup'
+        for ii=1:nattr
+            stat = hdfv('setattr',id,attrnames{ii},getfield(obj_struct.attributes,attrnames{ii}));
+        end
+        [status,errtypelist] = seterr(stat,status,errtypelist,'struct2hdf: Vsetattr');
+        
+    case 'vdata'
+        for ii=1:nattr
+            attrfield = getfield(obj_struct.attributes,attrnames{ii});
+            if isstruct(attrfield)                         % is a sub-structure of Vdata field attributes
+                field_attrnames = fieldnames(attrfield);   
+                nfieldattr = length(field_attrnames);
+                [field_index,stat] = hdfvs('findex',id,attrnames{ii});  % attrnames{ii} -> Vdata field name
+                for jj=1:nfieldattr
+                    stat = hdfvs('setattr',id,field_index,field_attrnames{jj},getfield(attrfield,field_attrnames{jj}));
+                end
+            else                                           % is an attribute name of Vdata
+               stat = hdfvs('setattr',id,'vdata',attrnames{ii},attrfield);
+           end
+        end   
+        [status,errtypelist] = seterr(stat,status,errtypelist,'struct2hdf: VSsetattr');
+        
+    case {'scientific data set','dimension'}
+        stat = 0;
+        for ii=1:nattr
+            if strcmp(attrnames{ii},'FillValue')
+                stat_fill = hdfsd('setfillvalue',id,getfield(obj_struct.attributes,attrnames{ii}));  % set fill value
+                [status,errtypelist] = seterr(stat_fill,status,errtypelist,'struct2hdf: DSsetfillvalue'); 
+            else
+                stat = hdfsd('setattr',id,attrnames{ii},getfield(obj_struct.attributes,attrnames{ii}));
+            end
+        end
+        [status,errtypelist] = seterr(stat,status,errtypelist,'struct2hdf: SDsetattr');
+            
+    end  % switch
+end % if
+%--------------------------------------------------------------------------------------------------------------------
+
+%++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+function [status,errtypelist] = setannotations(obj_struct,an_id,tag,ref)
+%
+% Add annotations to an hdf object
+%   an_id      -> multi annotation interface id
+%   tag        -> tag of the corresponding object (if file, tag = [])
+%   ref        -> ref of the corresponding object (if file, ref = [])
+%   obj_struct -> objectsubstructure. Structure model for annotations :
+%                   obj_struct.annotations.label{ii} = 'label string';
+%                   obj_struct.annotations.description{jj} = 'description string';
+%  jcp 05/10/03
+%
+show = 0;
+
+status = 0; errtypelist = {};
+
+if isfield(obj_struct,'annotations')
+    %-- label annotations
+    if isfield(obj_struct.annotations,'label')
+        nlabel = length(obj_struct.annotations.label); 
+    else
+        nlabel = 0;
+    end
+    for ii=1:nlabel
+        if isempty(tag)|isempty(ref)
+            annot_id = hdfan('createf',an_id,'file_label');
+        else
+            annot_id = hdfan('create',an_id,tag,ref,'data_label');
+        end
+        [status,errtypelist] = seterr(annot_id,status,errtypelist,'setannotations: fail ANcreate',show);
+        stat = hdfan('writeann',annot_id,obj_struct.annotations.label{ii});
+        [status,errtypelist] = seterr(stat,status,errtypelist,'setannotations: fail ANwriteann',show);
+        stat = hdfan('endaccess',annot_id);
+        [status,errtypelist] = seterr(stat,status,errtypelist,'setannotations: fail ANendaccess',show);
+    end    
+    %-- description annotations
+    if isfield(obj_struct.annotations,'description')
+        ndesc = length(obj_struct.annotations.description); 
+    else 
+        ndesc = 0;
+    end
+    for ii=1:ndesc
+        if isempty(tag)|isempty(ref)
+            annot_id = hdfan('createf',an_id,'file_desc');
+        else
+            annot_id = hdfan('create',an_id,tag,ref,'data_desc');
+        end
+        [status,errtypelist] = seterr(annot_id,status,errtypelist,'setannotations: fail ANcreate',show);
+        stat = hdfan('writeann',annot_id,obj_struct.annotations.description{ii});
+        [status,errtypelist] = seterr(stat,status,errtypelist,'setannotations: fail ANwriteann',show);
+        stat = hdfan('endaccess',annot_id);
+        [status,errtypelist] = seterr(stat,status,errtypelist,'setannotations: fail ANendaccess',show);
+    end    
+end
+%--------------------------------------------------------------------------------------------------------------------
+
+%++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+function [id,tag,ref,errtype] = getParentIdTagRef(hdfparenttype,hdf_struct,pointer)
+%
+% Returns id, tag and ref of the parent objet defined by pointer
+%    
+% if objet has file parent, getParentIdTagRef returns [0 0 0 msg] 
+% if hdfparenttype is 'all', getParentIdTagRef returns [ 0 0 msg]
+% if object parent is not a Vgroup, getParentVgroupId returns -1 and errtype
+%
+id = 0; tag = 0; ref = 0; errtype = {};
+if length(pointer)>1
+    parentstruct = getchildren(hdf_struct,'children',pointer(1:end-1))
+    id = parentstruct.id; 
+    tag = hdfml('tagnum',parentstruct.properties.tagname); 
+    ref = parentstruct.properties.ref;
+    if strcmp(lower(hdfparenttype),'vgroup')
+        if ~strcmp(lower(parentstruct.type),'vgroup')
+             id = -1;
+             errtype = 'struct2hdf: parent is not Vgroup';
+         end    
+     end
+ end
+
+%--------------------------------------------------------------------------------------------------------------------

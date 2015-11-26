@@ -1,0 +1,833 @@
+function varargout = HDFfileAScontrol(action,varargin)
+%HDFfileAScontrol
+%
+% PURPOSE
+%    create and access to AS formated HDF files
+%
+% SYNOPSIS
+%      [status,errtype,sd_struct] = HDFfileAScontrol('createMeasTime',filename,N_time,N_prb,N_seq,N_aux,N_ref)
+%      [status,errtype,sd_struct] = HDFfileAScontrol('createMeasTime',filename,axetime,axeprb,axeseq,axeaux,axeref)
+%      [status,errtype,sd_struct] = HDFfileAScontrol('createMeasSpct',filename,N_freq,N_prb,N_seq,N_aux,N_ref)
+%      [status,errtype,sd_struct] = HDFfileAScontrol('createMeasSpct',filename,axefreq,axeprb,axeseq,axeaux,axeref)
+%      [status,errtype,sd_struct] = HDFfileAScontrol('createEmpty',filename)
+%
+%      [status,errtype,sd_struct] = HDFfileAScontrol('addDataSet',filename,datasetname,dim_names,arraysize)
+%                                                                                            ,...attributes_struct)
+%      [status,errtype] = HDFfileAScontrol('putdataset',filename,datasetname,array,axe1,axe2) ...,axe3) ...,axe4)
+%      [status,errtype] = HDFfileAScontrol('putdataset',filename,datasetname,array)
+%      [status,errtype] = HDFfileAScontrol('setdata',filename,datasetname,array,ind1,ind2) ...,ind3) ...,ind4)
+%      [array,axe1,axe2, ...,axe4] = HDFfileAScontrol('getdata',filename,datasetname,ind1,ind2) ...,ind3) ...,ind4)
+%      [status,errtype] = HDFfileAScontrol('setattributes',filename,datasetname,attrname,value)
+%      [status,errtype] = HDFfileAScontrol('setprotect',filename,datasetname,value)
+%                  cell = HDFfileAScontrol('getannotations',filename,access_code) ...,debstring)
+%                               access_code = {'file','file_label','file_desc'}
+%      [status,errtype] = HDFfileAScontrol('setannotations',filename,access_code,string or cell)
+%                               access_code = {'file_label','file_desc'}
+%      [status,errtype] = HDFfileAScontrol('delannotations',filename,access_code,debstring)
+%                               access_code = {'file','file_label','file_desc'}
+%
+%      HDF_struct = HDFfileAScontrol('getinfo',filename) ...,code)
+%      HDFfileAScontrol('closeall') ...,show)
+%      [varargout] = HDFfileAScontrol('test',internalfunname,vararin)
+%
+% DESCRIPTION
+%        status      -> status (0 : fail, 1 : success)
+%        errtype     -> cell of error code 
+%        filename    -> name of the HDF file
+%
+%   action = 'createMeasTime' creates an new HDF file with the MeasTime format :
+%      [Time_prb(1:N_time,1:N_prb), Time_aux(1:N_time,1:N_aux), Coordinates(1:3,N_prb), IndexMap(1:2,N_prb)]
+%        N_time      -> number of samples in the time dimension
+%        N_prb       -> number of probes or measurement points
+%        N_aux       -> number of auxiliary signals capted in synchronious of probe signals
+%        N_seq       -> number of sequences (optional)
+%   action = 'createMeasSpct' creates an new HDF file with the MeasSpct format :
+%      [Xspct,  Aspct_prb,  Aspct_aux,  Refarray, Coordinates(1:3,N_prb), IndexMap(1:2,N_prb)]
+%        N_freq      -> number of samples in the time dimension
+%        N_prb       -> number of probes or measurement points
+%        N_aux       -> number of auxiliary signals capted in synchronious of probe signals
+%        N_seq       -> number of sequences (optional)
+%   action = 'createEmpty' creates an new empty HDF file for free format use.
+%   action = 'getinfo'      returns structure info
+%        sd_struct   -> structure of the HDF file
+%        code        -> code for the retun structure {'short,'complete','full'}
+%                       if code is a structure with fields :
+%                          style     : 'short', ['complete'], 'full'
+%                          singleton :  ['on'], 'off'  
+%   action = 'putdataset'   put data set and axes (scales) in the HDF file
+%        datasetname -> name of the data set
+%        array       -> multidimensional array of data (if empty, the data set is set by fillvalue)
+%        axeX        -> vector of value of the dimension (scale)
+%   action = 'setdata'   set data to a data set following the index of axes (scales)
+%        indX        -> axes index (ex : 2:5)  (end is not valid)
+%                       ':','all'    for entire range
+%                       [],1,0       for un-used dimension
+%   action = 'getdata'   get data from a data set following the index of axes (scales)
+%                       the size of array and axeX depend of index          
+%   action = 'addDataSet' add a new data set to an HDF file
+%        dim_names   -> cell of the axe names
+%        arraysize   -> size of the dataset (2 to 4). Ex : [N N2], [N1 N2 N3 N4].
+%
+% SEE ALSO
+%     hdfml('listinfo'), hdfml('closeall')   
+
+% EXAMPLES   
+%
+% ALGORITHM
+%   specific functions used :
+%     makeHDFstruct produces predefined structures for HDFfileAScontrol
+%           sd_struct = makeHDFstruct(code,Ntimefreq,N_prb,N_seq,N_aux,N_ref)
+%     struct2hdf use a valid hdf structure to create a SD file or a Data Set
+%           status = struct2hdf(filename or sd_id,sd_sd_struct)  create SD file
+%           status = struct2hdf(filename or sd_id,sds_struct)    create Data Set
+%     hdf2struct read HDF and put info and data in a structure
+%           sd_struct = hdf2struct(filename,code)                returns structure of SD 
+%           sd_struct = hdf2struct(sd_id,code)                   returns structure of SD 
+%           sds_struct = hdf2struct(sds_id,code)                 returns structure of Data Set 
+%     covertcmplx converts standard HDF SD structure in structure with complex convention
+%           (struct is SD structure or Data Set substructure
+%           struct = convertcmplx(struct)
+%     find_sd_id returns HDF id after creation or opening for read or write
+%           [sd_id,sd_name] = find_sd_id(filename,acces_mode,err_msg)
+%     find_sds_id returns Data Set id from its name
+%           sds_id = find_sds_id(sd_id,ds_name)
+%     checksds checks input index with data set characteristics 
+%          [start,stride,edge,useaxe1,....,useaxe4] = checksds(sds_struct,mindex1,....,mindex4)
+%
+% REFERENCES
+%    Matlab, Using Matlab, Version 6, 2002 (R13).
+%
+% Comments:   
+%
+% Matlab Toolbox functions used: 
+%       find_sd_id, seterr,
+%
+% External librairies and languages: none
+%
+% Test procedure: none
+%
+% Copyright 1997-2008 VisualVibroAcoustics
+% jfp&jcp 22/10/02                                                                                             version 28/04/08 
+%------------------------------------------------------------------------------------------------------------------------------
+%  name  |   date   |  modification description
+%------------------------------------------------------------------------------------------------------------------------------
+%  jcp   | 22/01/04 | close the file in 'delannotation'
+%------------------------------------------------------------------------------------------------------------------------------
+%  jcp   | 08/06/04 | bug correction : use squeeze2 in accesdataset
+%------------------------------------------------------------------------------------------------------------------------------
+%  jcp   | 22/08/05 | bug correction : add line in attribute loop in 'adddataset' and remove the unused internal function 
+%        |          | find_sds_struct
+%------------------------------------------------------------------------------------------------------------------------------
+%  jfp   | 21/07/06 | bug correction in squeeze2: delete the last element (dimension) in sizemodel when it is 1
+%------------------------------------------------------------------------------------------------------------------------------
+%  jcp   | 22/07/06 | add IndexMap attribute arraysys='rectangular' in 'info' when reading file created before v 0.3 
+%------------------------------------------------------------------------------------------------------------------------------
+%  jcp   | 19/08/07 | add in makeHDFstruct (makeMeasSpctDS) the possibility to store Refarray without Xspct and Aspct_prb when 
+%        |          | axeref equal to axeprb. New field in ASannotations and trackability features
+%------------------------------------------------------------------------------------------------------------------------------
+%  jcp   | 07/10/07 | add the form sd_struct = HDFfileAScontrol('getinfo') 
+%------------------------------------------------------------------------------------------------------------------------------
+%  jcp   | 28/04/08 | add the creation of empty file by HDFfileAScontrol('createEmpty',filename)
+% NOUVELLE VERSION EN CONSTRUCTION : posibilité ('putdataset',filename,datasetname,[],axe1,axe2) ...,axe3) pour déclarer les 
+% dimensions sans avoir à créer un grand tableau 
+%------------------------------------------------------------------------------------------------------------------------------
+
+proc_id = 'HDFfileAScontrol.m_v0.31_20080428'; if nargin==0, varargout{1} = proc_id; return, end
+
+
+%--validity control 1
+%
+switch lower(action)
+%=================================================================================================    
+case 'test'
+%   utility to use internal functions. Example for find_file_id internal function :
+%       [f_id,errtype,completefilename] = HDFfileAScontrol('test','find_file_id',filename,'write')
+
+try
+  [varargout{1:nargout}] = feval(varargin{:});
+catch
+  errordlg({'Unhandled internal error in HDFfileAScontrol.',' ',lasterr},'hdf_lib');
+  lasterr('');
+end
+    
+%=================================================================================================    
+case 'adddataset'
+%      [status,errtype,sd_struct] = HDFfileAScontrol('addDataSet',filename,datasetname, ...
+%                                            dim_names,arraysize) ,...attributes_struct)
+%                                                                               
+%
+nargchk(5,6,nargin);
+filename = varargin{1};
+datasetname = varargin{2};
+dim_names = varargin{3};
+dims = varargin{4};
+sds_struct.children = makeHDFstruct('DataSet',datasetname,dims,dim_names);
+sds_struct.type = 'HDF Scientific Data';
+sds_struct.id   = [];
+if nargin>5
+    % sds_struct.children = appendfields(sds_struct.children,'attributes',varargin{5})
+    cNames = fieldnames(varargin{5});
+    for ii=1:length(cNames)
+        struct = setfield(sds_struct.children,'attributes',cNames{ii},getfield(varargin{5},cNames{ii}));
+        sds_struct.children = struct;                    % add jcp 17/08/05
+    end
+end
+
+status = 0; errtypelist = {};
+[f_id,errtype] = find_file_id(filename,'write');
+[status,errtypelist] = seterr(f_id,status,errtypelist,errtype);
+[stat1,errtype,sd_struct] = struct2hdf(f_id,sds_struct);
+[status,errtypelist] = seterr(stat1,status,errtypelist,errtype);
+stat2 = hdfh('close',f_id);
+[status,errtypelist] = seterr(stat2,status,errtypelist,errtype);
+if nargout>=1, varargout{1} = status; end
+if nargout>=2, varargout{2} = errtypelist; end
+if nargout>=3, varargout{3} = sds_struct; end
+
+%=================================================================================================    
+case 'closeall'
+%      HDFfileAScontrol('closeall',show)
+%
+nargchk(1,2,nargin);
+if nargin>1, show = varargin{1}; else, show = 0; end
+if show==1, hdfml('listinfo'), end,  hdfml('closeall'), 
+
+%=================================================================================================    
+case {'createmeastime','createmeasspct','createempty'}
+%    [status,errtype,sd_struct] = ...
+%        HDFfileAScontrol('createEmpty',filename)
+%        HDFfileAScontrol('createMeasTime',filename,N_time,N_prb,N_seq,N_aux,N_ref)
+%        HDFfileAScontrol('createMeasSpct',filename,N_freq,N_prb,N_seq,N_aux,N_ref)
+%        HDFfileAScontrol('createMeasTime',filename,axetime,axeprb,axeseq,axeaux,axeref)
+%        HDFfileAScontrol('createMeasSpct',filename,axefreq,axeprb,axeseq,axeaux,axeref)
+%
+if strcmp(lower(action),'createempty')
+    nargchk(2,2,nargin);
+    % create structure: sd_struct = makeHDFstruct('emptyDS')
+    sd_struct = makeHDFstruct('emptyDS');
+    
+else
+    nargchk(6,7,nargin);
+    N_timefreq = varargin{2};
+    N_prb  = varargin{3};
+    N_seq = varargin{4};
+    N_aux = varargin{5};
+    if nargin<7
+        if strcmp(action,'createMeasTime'), N_ref = 0; else, error('argument number may be 7 for createMeasSpct'), end
+    else
+        N_ref = varargin{6};
+    end
+    % create structure: sd_struct = makeHDFstruct('MeasTime' or 'MeasSpct',Ntimefreq,N_prb,N_seq,N_aux,N_ref)
+    sd_struct = makeHDFstruct(action(7:end),N_timefreq,N_prb,N_seq,N_aux,N_ref);
+end
+
+filename = varargin{1};
+ind = findstr(filename,'.hdf'); if ~isempty(ind), name = filename(1:ind-1); else, name = filename; end
+ind = findstr(filename,'\'); if ~isempty(ind), name = filename(ind(end)+1:end); else, name = filename; end
+sd_struct.attributes.name = name;
+status = 0; errtypelist = {};
+[f_id,errtype] = find_file_id(filename,'create');
+[status,errtypelist] = seterr(f_id,status,errtypelist,errtype);
+[stat1,errtype,sd_struct] = struct2hdf(f_id,sd_struct);
+[status,errtypelist] = seterr(stat1,status,errtypelist,errtype);
+stat2 = hdfh('close',f_id);
+[status,errtypelist] = seterr(stat2,status,errtypelist,errtype);
+if nargout>=1, varargout{1} = status; end 
+if nargout>=2, varargout{2} = errtypelist; end
+if nargout>=3, varargout{3} = sd_struct; end
+
+%=================================================================================================    
+case {'getannotations','setannotations','delannotations'}
+%              cell = HDFfileAScontrol('getannotations',filename,access_code) ...,debstring)
+%                               access_code = {'file','file_label','file_desc'}
+%  [status,errtype] = HDFfileAScontrol('setannotations',filename,access_code,string or cell)
+%                               access_code = {'file_label','file_desc'}
+%  [status,errtype] = HDFfileAScontrol('delannotations',filename,access_code,debstring)
+%                               access_code = {'file','file_label','file_desc'}
+%
+nargchk(3,4,nargin); nargchk(0,2,nargout); 
+filename =  varargin{1};
+access_code = varargin{2};
+if nargin>3, annotdata = varargin{3}; else, annotdata = []; end
+status = 0; errtypelist = {};
+if strcmp(lower(action),'delannotations')
+    [file_id,errtype,completefilename] = find_file_id(filename,'write');    % open file
+    [status,errtypelist] = seterr(file_id,status,errtypelist,errtype);
+    if iscell(annotdata), error('debstring may be a character string'), end
+    [stat,errtype] = deleteHDFfileannotation(file_id,access_code,annotdata);
+    [status,errtypelist] = seterr(stat,status,errtypelist,errtype);
+    stat2 = hdfh('close',file_id);
+    [status,errtypelist] = seterr(stat2,status,errtypelist,errtype);
+elseif strcmp(lower(action),'setannotations')
+    if ischar(annotdata), cellannot = {annotdata}; else, cellannot = annotdata; end
+    hdf_struct.type = 'HDF Scientific Data';
+    if strcmp(lower(access_code),'file_label')
+        hdf_struct.annotations.label = cellannot; 
+        [status,errtypelist] = struct2hdf(filename,hdf_struct);
+    elseif strcmp(lower(access_code),'file_desc')
+        hdf_struct.annotations.description = cellannot;
+        [status,errtypelist] = struct2hdf(filename,hdf_struct);
+    else
+        error('access_code may be ''file_label'' or ''file_desc'''),
+    end
+    
+else         % 'getannotations'
+    if iscell(annotdata), error('debstring may be a character string'), end
+    cellannot = {};
+    [hdf_struct,status,errtype] = hdf2struct(filename);
+    if status~=-1
+        if strcmp(lower(access_code),'file')|strcmp(lower(access_code),'file_label')
+            if isfield(hdf_struct.annotations,'label'), label = hdf_struct.annotations.label; else, label = {}; end
+            if isempty(annotdata)
+                cellannot = label; 
+            else
+                for ii=1:length(label)
+                    ind = findstr(label{ii},annotdata); 
+                    if ~isempty(ind)
+                        if ind==1, cellannot = {cellannot{:} label{ii}}; end
+                    end
+                end
+            end
+        end
+        if strcmp(lower(access_code),'file')|strcmp(lower(access_code),'file_desc')
+            if isfield(hdf_struct.annotations,'description'), desc = hdf_struct.annotations.description; else, desc = {}; end
+            if isempty(annotdata)
+                cellannot = {cellannot{:} desc{:}};
+            else
+                for ii=1:length(desc)
+                    ind = findstr(desc{ii},annotdata); 
+                    if ~isempty(ind)
+                        if ind==1, cellannot = {cellannot{:} desc{ii}}; end
+                    end
+                end
+            end        
+        end
+    end % if status
+end
+if strcmp(lower(action),'getannotations')
+    varargout{1} = cellannot;
+else
+    varargout{1} = status; varargout{2} = errtypelist; 
+end
+
+%=================================================================================================    
+case 'getinfo'
+%      sd_struct = HDFfileAScontrol('getinfo')
+%      sd_struct = HDFfileAScontrol('getinfo',filename) ...,code)
+%
+if nargin<2
+    [filename,pathname] = uigetfile('*.hdf','Select an HDF-file');
+    if filename==0, filename = []; else, filename = fullfile(pathname,filename); end
+else
+    filename = varargin{1};
+end
+if nargin<3, code = 'complete'; else, code = varargin{2}; end
+[HDF_struct,status,errtype] = hdf2struct(filename,code);
+if isstruct(HDF_struct)
+    Nchild = length(HDF_struct.children);
+    for ii=1:Nchild
+        if strcmp(HDF_struct.children(ii).properties.name,'IndexMap')
+            if ~isfield(HDF_struct.children(ii).attributes,'arraysys')
+                HDF_struct.children(ii).attributes.arraysys = 'rectangular';        % before v 0.3
+            end
+        end
+    end
+end
+if status==0
+    varargout{1} = convertcmplx(HDF_struct);
+else
+    varargout{1} = [];
+end
+
+%=================================================================================================    
+case 'setattributes'
+%  [status,errtype] = HDFfileAScontrol('setattributes',filename,datasetname,attrname,value)
+%  [status,errtype] = HDFfileAScontrol('setattributes',filename,datasetname,attrstruct)
+%      status : 0 or -1, value = atribute value, attrstruct.attrname = value
+%      if datasetname = [], it is data group (SD) attributes
+%
+nargchk(4,5,nargin); nargchk(0,2,nargout); 
+filename =  varargin{1};
+datasetname = varargin{2};
+attrname = varargin{3};
+if nargin>4
+    value = varargin{4};
+    [status,errtypelist] = setattributes(filename,datasetname,attrname,value);
+else
+    [status,errtypelist] = setattributes(filename,datasetname,attrname);
+end
+if nargout>=1 varargout{1} = status; end
+if nargout>=2, varargout{2} = errtypelist; end
+
+%=================================================================================================    
+case 'setprotect'
+%  [status,errtype] = HDFfileAScontrol('setprotect',filename,datasetname,value)
+%      status : 0 or -1, value = 'on' or 'off'
+%   datasetname is the name of a dataset (attribute name: 'protect') or 'fileannotations'
+%   (attribute name: 'protectannot' at the SD level)
+nargchk(4,4,nargin); nargchk(0,2,nargout); 
+filename =  varargin{1};
+datasetname = varargin{2};
+value = varargin{3};
+if ~strcmp(value,'on'), value = 'off'; end
+if strcmp(datasetname,'fileannotations')
+    attrname = 'protectannot'; datasetname = [];
+else    
+    attrname = 'protect';
+end
+[status,errtypelist] = setattributes(filename,datasetname,attrname,value);
+if nargout>=1 varargout{1} = status; end
+if nargout>=2, varargout{2} = errtypelist; end
+
+%=================================================================================================    
+case {'putdataset','getdata','setdata'}
+%  [status,errtype] = HDFfileAScontrol('putdataset',filename,datasetname,array,axe1,axe2) ...,axe3) ...,axe4)
+%  [status,errtype] = HDFfileAScontrol('putdataset',filename,datasetname,array)
+%  [status,errtype] = HDFfileAScontrol('setdata',filename,datasetname,array,indx1,indx2) ...,indx3) ...,indx4)
+%      status : 0 or -1
+%  [array,axe1,...,axe4] = HDFfileAScontrol('getdata',filename,datasetname,indx1,indx2) ...,indx4)
+%
+code = action(1:3); 
+if strcmp(code,'get')
+    nargchk(5,7,nargin); nargchk(1,5,nargout); access_mode = 'read'; 
+else
+    nargchk(6,8,nargin); nargchk(0,2,nargout); access_mode = 'write'; 
+end
+filename =  varargin{1};
+datasetname = varargin{2};
+if strcmp(code,'get'), array = []; ind = 0; else, array = varargin{3}; ind = 1; end
+%indx1 = varargin{3 + ind}; indx2 = varargin{4 + ind};
+if nargin>(3+ind), indx1 = varargin{3 + ind}; else, indx1 = []; end
+if nargin>(4+ind), indx2 = varargin{4 + ind}; else, indx2 = []; end
+if nargin>(5+ind), indx3 = varargin{5 + ind}; else, indx3 = []; end
+if nargin>(6+ind), indx4 = varargin{6 + ind}; else, indx4 = []; end
+status = 0; errtypelist = {}; modify_flag = 0; errtype = {};
+[struct_id.file,errtype,completefilename] = find_file_id(filename,access_mode); % open file
+[status,errtypelist] = seterr(struct_id.file,status,errtypelist,errtype);
+struct_id.mds = hdfsd('start',completefilename,access_mode);                  % open sd interface
+[status,errtypelist] = seterr(struct_id.mds,status,errtypelist,'HDFfileAScontrol/putdataset: start-rw');
+if status>=0
+   [struct_id.ids,errtype] = find_sds_id(struct_id.mds,datasetname);
+   [status,errtypelist] = seterr(struct_id.ids,status,errtypelist,errtype);
+   if status>=0
+       if strcmp(code,'get')
+           [stat,errtype,array,axe1,axe2,axe3,axe4] = accesdataset('get',struct_id,indx1,indx2,indx3,indx4);
+           if stat<0, array = []; end
+       else
+           [stat,errtype] = accesdataset(code,struct_id,indx1,indx2,indx3,indx4,array);
+           modify_flag = 1;
+       end
+       [status,errtypelist] = seterr(stat,status,errtypelist,errtype);
+   end   
+   if modify_flag==1
+       stat = hdfsd('setattr',struct_id.mds,'modifydate',isodatestr);   % change for compilation 05/09/03
+       %%%% stat = hdfsd('setattr',sd_id,'modifydate',datestr(datenum(now),30));   % ISO 8601;
+       [status,errtypelist] = seterr(stat,status,errtypelist,'HDFfileAScontrol/putdataset: SDsetattr');
+   end
+   stat_end = hdfsd('end',struct_id.mds);
+   [status,errtypelist] = seterr(stat_end,status,errtypelist,'HDFfileAScontrol/putdataset: end');
+end
+if struct_id.file>0
+    stat = hdfh('close',struct_id.file); 
+    [status,errtypelist] = seterr(stat,status,errtypelist,'HDFfileAScontrol/putdataset: H close');
+end
+if strcmp(code,'get')
+    varargout{1} = array;
+    if nargout>1, if ~isempty(array), varargout{2} = axe1; else, varargout{2} = []; end, end
+    if nargout>2, if ~isempty(array), varargout{3} = axe2; else, varargout{3} = []; end, end
+    if nargout>3, if ~isempty(array), varargout{4} = axe3; else, varargout{4} = []; end, end
+    if nargout>4, if ~isempty(array), varargout{5} = axe4; else, varargout{5} = []; end, end
+else    
+    if nargout>0 varargout{1} = status; end, if nargout>1, varargout{2} = errtypelist; end
+end
+
+%=================================================================================================    
+otherwise
+    error('unknow action name'),
+end
+
+
+%+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+function [status,errtypelist] = setattributes(filename,datasetname,attrname,value)
+%
+%  write attributes value and create if necessary
+%         [status,errtypelist] = setattributes(filename,datasetname,attrname,value)
+%         [status,errtypelist] = setattributes(filename,datasetname,attrstruct)
+%                 with attribute structure : attrstruct.name1 = value1,
+%                                            attrstruct.name2 = value2,  etc..
+%         if datasetname = [], it is data group (SD) attributes 
+%                                                         modification 13/10/03 by jcp
+nargchk(3,4,nargin); nargchk(0,2,nargout); 
+if nargin==3
+    attrstruct = attrname;
+    attrnameslist = fieldnames(attrstruct);
+    Nattrs = length(attrnameslist); 
+else
+    Nattrs = 1; 
+end
+status = 0; errtypelist = {}; 
+[f_id,errtype,completefilename] = find_file_id(filename,'write');     % open file
+[status,errtypelist] = seterr(f_id,status,errtypelist,errtype);
+sd_id = hdfsd('start',completefilename,'write');                      % open sd interface
+[status,errtypelist] = seterr(sd_id,status,errtypelist,'HDFfileAScontrol/setattributes: start-w');
+if status>=0
+    if isempty(datasetname)
+        id = sd_id;
+    else                % id = sds-id
+        [id,errtype] = find_sds_id(sd_id,datasetname);
+        [status,errtypelist] = seterr(id,status,errtypelist,errtype);
+    end
+    if status>=0
+        for n=1:Nattrs
+            if Nattrs>1, attrname = attrnameslist{n}; value = getfield(attrstruct,attrname); end
+            for ii=1:length(id)
+                stat = hdfsd('setattr',id(ii),attrname,value);
+                [status,errtypelist] = seterr(stat,status,errtypelist,'HDFfileAScontrol/setattributes: SDsetattr'); 
+            end
+        end
+    end   
+    if ~isempty(datasetname)  % close sds access if it is open 
+        stat = hdfsd('endaccess',id);
+        [status,errtypelist] = seterr(stat,status,errtypelist,'HDFfileAScontrol/setattributes: endaccess');
+    end
+    stat_end = hdfsd('end',sd_id);
+    [status,errtypelist] = seterr(stat_end,status,errtypelist,'HDFfileAScontrol/setattributes: end');
+end
+if f_id>0
+    stat = hdfh('close',f_id); 
+    [status,errtypelist] = seterr(stat,status,errtypelist,'HDFfileAScontrol/setattributes: H close');
+end
+   
+%+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+function [sds_id,errtype] = find_sds_id(sd_id,ds_name)
+%
+%  Find Data Set id from its name
+%
+%  If the ds_name exist, returns sds_id, else, tests for [ds_name '_Re'] and [ds_name '_Im'] and
+%  returns [sds_Re_id sds_Im_id], otherwise, returns -1 for sds_id.
+%
+errtype = '';
+sds_index = hdfsd('nametoindex',sd_id,ds_name);
+if sds_index<0
+    sds_index(1) = hdfsd('nametoindex',sd_id,[ds_name '_Re']);
+    sds_index(2) = hdfsd('nametoindex',sd_id,[ds_name '_Im']);
+end
+if any(sds_index==-1)
+    errtype ='HDFfileAScontrol/find_sds_id: unknow ds_name';
+    sds_id = -1;
+else
+    sds_id = hdfsd('select',sd_id,sds_index(1));
+    if sds_id~=-1
+        if length(sds_index)>1
+            sds_id(2) = hdfsd('select',sd_id,sds_index(2));
+            if sds_id(2)==-1, sds_id = -1; end
+        end
+    end
+    if sds_id==-1, errtype = 'HDFfileAScontrol/find_sds_id: fail'; end 
+end
+
+%+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+function [start,stride,edge,usearraysize,outarraysize,varargout] = checksds(sds_struct,varargin)
+%
+%   get SDS parameters : if there are singletons, the outputs (start,stride,edge,arraysize) return info
+%   without singletons. With 'get' axeX outputs also give the singleton values.
+%
+%   [start,stride,edge,usearraysize,outarraysize,useaxe1,useaxe2,useaxe3,useaxe4,...] = 
+%                                          checksds(sds_struct,mindex1,mindex2,mindex3,mindex4,...)
+%      examples :
+%   [start,stride,edge,usearraysize] = checksds(sds_struct) or ...,':',':')  or  ...,':',':',[])
+%      for initialize of a 2D array.
+%   [start,stride,edge,usearraysize,outarraysize,useaxe1,useaxe2,useaxe3,useaxe4] = checksds(sds_struct,5:25,':',1,[])
+%      for select a Matlab array  A(2:25,:,1) per exemple
+%
+%  start,stride,edge localisation parameters of the used data set
+%  useaxeX      -> used part of scale vector in Matlab order including singleton 
+%  usearraysize -> size of the output array in Matlab order but WITHOUT singletons
+%  outarraysize -> size of the output array in Matlab order WITH singletons
+%  sds_struct   -> structure of the data set ('complete')
+%  mindexX      -> Matlab array index (ex: 2:5 or 1:2:7) including singleton case (ex: 1)  
+%                     end is not valid
+%                     ':','all'    for entire range
+%                     [],0         for unused dimension
+% modified 03/10/03 by jcp (add singleton possibility)
+% disp('checksds'),varargin,
+
+%-- determine matlab dimensions and sizes with and without singletons and scale (hdf) in matlab order
+matlabdimension = length(sds_struct.properties.size);
+jj = 1; 
+for ii=1:matlabdimension   % Matlab order
+    if nargin-1>=ii
+        if ischar(varargin{ii})      % if it is character, mindexX <- ':' is expected   
+            dim{ii} = 1:sds_struct.properties.size(ii);        % 
+        elseif isnumeric(varargin{ii})
+            dim{ii} = varargin{ii}; 
+        else
+            error('invalid specification of dimension'); 
+        end
+    else
+        dim{ii} = 1:sds_struct.properties.size(ii);
+    end
+
+    %-- construct scale in Matlab order and arraysize (Matlab order without singleton)
+    if sds_struct.properties.size(ii)~=1      % no-singleton dimension
+        arraysize(jj) = sds_struct.properties.size(ii); 
+        scale{jj} = dim{ii};
+        outarraysize(ii) = length(scale{jj});
+        usearraysize(jj) = length(scale{jj}); 
+        jj = jj + 1;
+    else                                      % singleton dimension
+        outarraysize(ii) = 1; 
+    end
+end
+
+%-- determine ds parameters
+dsrank = length(arraysize);
+dsdims = fliplr(arraysize);
+
+start = zeros(1,dsrank); edge = zeros(1,dsrank); stride = zeros(1,dsrank); 
+for ii=1:dsrank                                   % hdf order
+    vectindex = scale{dsrank-ii+1};
+    start(ii) = vectindex(1)-1; edge(ii) = length(vectindex);
+    if edge(ii)>1, stride(ii) = mean(diff(vectindex)); else, stride(ii) = 1; end
+end
+
+%--output (axevector)
+varargout = {};   %varargout = []; jf 30/08/03
+for ii = 1:nargout-5                             % Matlab order
+    if matlabdimension>=ii
+        axevector = sds_struct.children(ii).properties.axevector;
+        varargout{ii} = axevector(dim{ii}); 
+    else
+        varargout{ii} = {};    %varargout{ii} = []; jf 30/08/03
+    end
+end
+
+if nargin==1, usearraysize = arraysize; outarraysize = sds_struct.properties.size; end
+
+%+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+function [status,errtypelist,varargout] = accesdataset(code,struct_id,varargin)
+%accesdataset
+%
+% PURPOSE
+%    Acces to data in a data set object
+%
+% SYNOPSIS
+%      [status,errtypelist] = accesdataset('put',sds_id,axe1,axe2,axe3,axe4,array)
+%      [status,errtypelist] = accesdataset('set',sds_id,indx1,indx2,indx3,indx4,array)
+%      [status,errtypelist,array,axe1,axe2,axe3,axe4] = accesdataset('get',sds_id,indx1,indx2,indx3,indx4)
+%
+% DESCRIPTION
+%   code        -> 'put', 'set', 'get'
+%   struct_id   -> tructure of id (file, multiple data set, individual data set) 
+%   struct_id.file (file_id) : file identifier
+%   struct_id.mds  (sd_id)   : multiple data set identifier
+%   struct_id.ids  (sds_id)  : individual data set identifier: scalar for real data, vector for complex data 
+%   status      -> status 0 if ok or -1 if operation fail
+%   errtypelist -> cell of the types of error
+%   array       -> multidimensional array of data
+%   axeX        -> vector of value of the dimension (scale)
+%   indxX       -> axes index (ex : 2:5,':','all',1,0,[])  (end is not valid)
+%
+%   This function works with Matlab singletons
+%
+% SEE ALSO
+%   
+
+% EXAMPLES   
+%
+% ALGORITHM
+%    
+% REFERENCES
+%    Matlab, Using Matlab, Version 6, 2002 (R13).
+%
+% Comments:   
+%
+% Matlab Toolbox functions used: none
+%
+% External librairies and languages: none
+%
+% Test procedure: none
+%
+% Copyright 1997-2006 VisualVibroAcoustics
+% jcp 01/06/03                                                                                      version 08/06/04 
+%-------------------------------------------------------------------------------------------------------------------
+%  name  |   date   |  modification description
+%-------------------------------------------------------------------------------------------------------------------
+%  jcp   | 03/10/03 | add the possibility to work with singletons.
+%-------------------------------------------------------------------------------------------------------------------
+%  jcp   | 08/06/04 | bug correction : use squeeze2 to control singleton in writing data (internal function)
+%-------------------------------------------------------------------------------------------------------------------
+
+%--validity control 1
+%
+status = 0; errtypelist = {};
+if strcmp(code,'put')|strcmp(code,'set')
+    array = varargin{5};
+    arraysize = size(array);
+end
+%if strcmp(code,'get')|strcmp(code,'set')
+    indx1 = varargin{1};
+    indx2 = varargin{2};
+    indx3 = varargin{3};
+    indx4 = varargin{4};
+%end
+
+if struct_id.ids>0, ok_flag = 1; else, ok_flag = 0; end
+if length(struct_id.ids)==2, if struct_id.ids(2)<=0, ok_flag = 0; end, cmplx_flag = 1; else, cmplx_flag = 0; end
+protect = 'off';
+
+%-- process
+%
+if ok_flag>0
+    
+    %--set parameters : if there are singletons, the outputs (start,stride,edge,arraysize) return info
+    %  without singletons. With 'get' axeX outputs also give the singleton values.  
+    sds_struct = hdf2struct(struct_id.ids(1),'complete'); 
+    if strcmp(code,'put')
+        [start,stride,edge,arraysize] = checksds(sds_struct);
+    elseif strcmp(code,'set')
+        [start,stride,edge,arraysize] = checksds(sds_struct,indx1,indx2,indx3,indx4);
+    elseif strcmp(code,'get')
+        [start,stride,edge,arraysize,outarraysize,axe1,axe2,axe3,axe4] = checksds(sds_struct,indx1,indx2,indx3,indx4);                                         
+        varargout{2} = axe1; varargout{3} = axe2; varargout{4} = axe3; varargout{5} = axe4;                                               
+    end
+    %--protection of the SDS
+    attr_index = hdfsd('findattr',struct_id.ids(1),'protect');
+    [value,stat] = hdfsd('readattr',struct_id.ids,attr_index);
+    if stat>=0&strcmp(value,'on'), protect = 'on'; end 
+    if cmplx_flag==1
+        attr_index = hdfsd('findattr',struct_id.ids(2),'protect');
+        [value,stat] = hdfsd('readattr',struct_id.ids,attr_index);
+        if stat>=0&strcmp(value,'on'), protect = 'on'; end 
+    end
+        
+    %--read or write data set
+    if status==0
+        %if ~strcmp(code,'get')&isempty(array)        
+        if strcmp(code,'set')&isempty(array)
+            [fillvalue,stat_fill] = hdfsd('getfillvalue',struct_id.ids(1)); if stat_fill<0, fillvalue = 0; end
+            array = fillvalue*ones(arraysize);       
+            if cmplx_flag==1
+                [fillvalue,stat_fill] = hdfsd('getfillvalue',struct_id.ids(2)); if stat_fill<0, fillvalue = 0; end
+                array = complex(array,fillvalue*ones(arraysize));
+            end
+        end
+        
+        if strcmp(code,'put')|strcmp(code,'set')
+            if strcmp(protect,'off')
+              array = squeeze2(array,sds_struct.properties.size);                % remove singletons  
+              stat = hdfsd('writedata',struct_id.ids(1),start,stride,edge,real(array));     % write data in the Data Set
+              [status,errtypelist] = seterr(stat,status,errtypelist,'HDFfileAScontrol/accesdataset: fail write');
+              if cmplx_flag==1
+                stat = hdfsd('writedata',struct_id.ids(2),start,stride,edge,imag(array));   % write data in the Data Set
+                [status,errtypelist] = seterr(stat,status,errtypelist,'HDFfileAScontrol/accesdataset: fail write');
+              end
+            else
+              [status,errtypelist] = seterr(-1,status,errtypelist,'HDFfileAScontrol/accesdataset: protected');
+            end
+        elseif strcmp(code,'get')
+            [array,stat] = hdfsd('readdata',struct_id.ids(1),start,stride,edge);            % read data from the Data Set
+            [status,errtypelist] = seterr(stat,status,errtypelist,'HDFfileAScontrol/accesdataset: fail read');
+            if cmplx_flag==1
+                [array_im,stat] = hdfsd('readdata',struct_id.ids(2),start,stride,edge);     % read data from the Data Set
+                [status,errtypelist] = seterr(stat,status,errtypelist,'HDFfileAScontrol/accesdataset: fail read');
+                if status==0
+                    % restore singletons
+                    if length(arraysize)~=length(outarraysize), 
+                        varargout{1} = reshape(complex(array,array_im),outarraysize); 
+                    else  
+                        varargout{1} = complex(array,array_im);
+                    end
+                else
+                    varargout{1} = []; 
+                end
+            else
+                if status==0
+                    % restore singletons
+                    if length(arraysize)~=length(outarraysize), 
+                        varargout{1} = reshape(array,outarraysize);
+                    else  
+                        varargout{1} = array;
+                    end
+                else 
+                    varargout{1} = []; 
+                end
+            end  % if cmplx_flag
+        end  % if code
+    end  % if status
+    
+    %--write dimscale for put  (jcp 03/10/03) if nargin>2 (jcp 25/10/03)
+    if status==0&strcmp(code,'put')&~isempty(indx1)
+        for ii=1:length(sds_struct.properties.size)
+            sds_struct.children(ii).properties.axevector = varargin{ii};
+            sds_struct.children(ii).properties.datatype = 'double';
+        end
+        [stat,errtype] = struct2hdf('sdsstruct2sds',struct_id.mds,sds_struct,0);
+        [status,errtypelist] = seterr(stat,status,errtypelist,errtype);
+    end
+
+    %--write dimscale for put
+    %if status==0&strcmp(code,'put')
+    %    ndim = length(edge);
+    %    for ii=1:ndim, axessize(ii) = length(varargin{ii}); end 
+    %    if (sum(axessize~=fliplr(edge))==0)     
+    %        for jj=0:ndim-1            % hdf order           
+    %            ii = ndim - jj;        % Matlab order
+    %            dim_id = hdfsd('getdimid',struct_id.ids(1),jj);
+    %            [status,errtypelist] = seterr(dim_id,status,errtypelist,'HDFfileAScontrol/accesdataset: getdimid');
+    %            stat_dim = hdfsd('setdimscale',dim_id,varargin{ii});
+    %            [status,errtypelist] = seterr(stat_dim,status,errtypelist,'HDFfileAScontrol/accesdataset: setdimscale');
+    %        end
+    %    else
+    %        [status,errtypelist] = seterr(-1,status,errtypelist,'HDFfileAScontrol/accesdataset: unmached dimscale');
+    %    end
+    %end
+   
+else
+    [status,errtypelist] = seterr(-1,status,errtypelist,'HDFfileAScontrol/accesdataset: invalid struct_id.ids');
+end % if ok_flag>0
+
+%-- end acces
+stat_endaccess = 0;
+for ii=1:length(struct_id.ids)
+     stat = hdfsd('endaccess',struct_id.ids(ii));
+     if stat<0, stat_endaccess = -1; end
+end
+[status,errtypelist] = seterr(stat_endaccess,status,errtypelist,'HDFfileAScontrol/accesdataset: endaccess');
+
+%+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+function b = squeeze2(a,sizemodel)
+%squeeze2 Remove singleton dimensions following sizemodel.
+%   b = SQUEEZE(a,sizemodel) returns an array b with the same elements as a but with all the singleton dimensions 
+%   present in the sizemodel vector are removed.  A singleton is a dimension such that size(a,dim)==1.  
+%   2-D arrays are unaffected by squeeze so that row vectors remain rows.
+%
+%   For example :
+%       the size of squeeze2(rand(2,1,3,1,4),[2 2 3 1 4]) is [2 1 3 4].
+%       the size of squeeze2(rand(2,1,1,4,1),[2 1 3 2 1]) is [2 1 4]
+%
+%   See also SQUEEZE, SHIFTDIM.
+
+%   JCP (08/06/04) d'après Clay M. Thompson 3-15-94, 
+%   Copyright 1984-2001 The MathWorks, Inc. - $Revision: 1.12 $  $Date: 2001/04/15 12:03:42 $
+%-------------------------------------------------------------------------------------------------------------------
+%  name  |   date   |  modification description
+%-------------------------------------------------------------------------------------------------------------------
+%  jfp   | 21/07/06 | bug correction : delete the last element (dimension) in sizemodel when it is 1
+%-------------------------------------------------------------------------------------------------------------------
+
+if nargin==0, error('Not enough input arguments.'); end
+
+if ndims(a)>2,
+  siz = size(a); 
+  %-- add this line to fix bug when last dimension is 1
+  if sizemodel(end)==1, sizemodel = sizemodel(1:end-1);end
+  if length(size(a))~=length(sizemodel), error('Length of sizemodel don''t match the dimensions of a'); end
+  if nargin==1, sizemodel = siz; end
+  siz(siz==1&sizemodel==1) = []; % Remove singleton dimensions which corresponds to 1 in sizemodel
+  siz = [siz ones(1,2-length(siz))]; % Make sure siz is at least 2-D
+  b = reshape(a,siz);
+else
+  b = a;
+end
+%+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++

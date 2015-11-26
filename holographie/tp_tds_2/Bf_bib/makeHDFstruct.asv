@@ -1,0 +1,662 @@
+function struct = makeHDFstruct(varargin)
+%makeHDFstruct
+%
+% PURPOSE
+%    Make some HDF predefined structures for Acoustic Scanner
+%
+% SYNOPSIS
+%      sd_struct = makeHDFstruct('MeasTime' or 'MeasSpct',Ntimefreq,N_prb,N_seq,N_aux,N_ref)
+%      sd_struct = makeHDFstruct('MeasTime' or 'MeasSpct',axetimefreq,axeprb,axeseq,axeaux,axeref)
+%      cl_struct = makeHDFstruct('MeasTimeCluster' or 'MeasSpctCluster',clustername,...
+%                                                Ntimefreq,N_prb,N_seq,N_aux,N_ref,Arraydim)
+%
+%      sds_struct = makeHDFstruct('DataSet',name,arraysize,dim_names)
+%      vgr_struct = makeHDFstruct('Vgroup',vgr_name,vgr_class)
+%      vdt_struct = makeHDFstruct('Vdata',vdt_name,vdt_class,datacell)
+%
+% DESCRIPTION
+%   sd_struct  -> HDF Scientific Data structure 
+%   code       -> 'MeasTime' or 'MeasSpct'
+%   Ntimefreq  -> length of the time or frequency vector
+%   N_prb      -> number of probes
+%   N_seq      -> number of sequences
+%   N_aux      -> number of auxiliary signals
+%   N_ref      -> number of references
+%   axe...     -> axevector for each dimension
+%
+%   cl_struct  -> custer for 'MeasTime' or 'MeasSpct' structure type
+%   clustername-> name of the cluster (user)
+%   arraydim   -> dimensions [Nx Ny] of the array (N_prb = Nx x Ny) or N
+%
+%   sds_struct -> general data set
+%   code       -> 'dataset'
+%   name       -> name of the data set
+%   arraysize  -> size of the array
+%   dim_names  -> cell of the axe names 
+%
+%   vgr_struct -> Vgroup substructure
+%   code       -> 'Vgroup'
+%   vgr_name   -> name of the Vgroup substructure
+%   vgr_class  -> name of Vgroup class
+%
+%   vdt_struct -> Vdata tab
+%   code       -> 'Vdata'
+%   vdt_name   -> name of the Vdata
+%   vdt_class  -> name of the Vdata class
+%   datacell   -> cell representing the Vdata tab
+%   
+% SEE ALSO
+%   
+
+% EXAMPLES   
+%
+% ALGORITHM
+%    
+% REFERENCES
+%    Matlab, Using Matlab, Version 6, 2002 (R13).
+%
+% Comments:   
+%
+% Matlab Toolbox functions used: none
+%
+% External librairies and languages: none
+%
+% Test procedure: none
+%
+% Copyright 1997-2008 VisualVibroAcoustics
+% jcp 30/11/02                                                                                                 version 28/04/08 
+%------------------------------------------------------------------------------------------------------------------------------
+%  name  |   date   |  modification description
+%------------------------------------------------------------------------------------------------------------------------------
+%  jcp   | 04/11/03 | modifie makeMeasTimeDS
+%------------------------------------------------------------------------------------------------------------------------------
+%  jcp   | 19/04/04 | allow N_prb to be 0 in MeasTimeDS, if N_aux or N_ref are non zero 
+%------------------------------------------------------------------------------------------------------------------------------
+%  jcp   | 23/05/04 | correct a bug in the modification of 19/04/04
+%------------------------------------------------------------------------------------------------------------------------------
+%  jcp   | 31/10/05 | modifications in makeMeasTimeDS, makeMeasSpctDS and makesdsstruct
+%------------------------------------------------------------------------------------------------------------------------------
+%  jcp   | 20/05/06 | add attribute arraysys of IndexMap Data Set in makeMeasTimeDS and makeMeasSpctDS
+%------------------------------------------------------------------------------------------------------------------------------
+%  jcp   | 14/08/07 | add in makeMeasSpctDS the possibility to store Refarray without Xspct and Aspct_prb when axeref 
+%        |          | equal to axeprb
+%------------------------------------------------------------------------------------------------------------------------------
+%  jcp   | 28/04/08 | create 'General' empty Scientific Data substructure : internal function sd_struct = makeEmptyDS
+%------------------------------------------------------------------------------------------------------------------------------
+%  jcp   | 10/10/08 | Following the creation of X function Y has disappeared: it has been replaced by the version of 10/10following the creation of makeEmptyDS, the internal function makeMeasSpctDS was lost. 
+%------------------------------------------------------------------------------------------------------------------------------
+%   
+code = lower(varargin{1});
+
+switch code
+    
+%==============================================================================================================================        
+case 'emptyds'
+
+    nargchk(0,0,nargin);
+    %
+    struct = makeEmptyDS;
+    
+%==============================================================================================================================        
+case {'meastimecluster','measspctcluster'}
+    
+    nargchk(8,8,nargin);
+    clustername = varargin{2};
+    Ntimefreq = varargin{3};
+    N_prb = varargin{4};
+    N_seq = varargin{5};
+    N_aux = varargin{6};
+    N_ref = varargin{7};
+    Arraydim = varargin{8};
+    if length(Arraydim)==2
+        dim_names = {'x','y'}; 
+    elseif length(Arraydim)==1
+        dim_names = {'n'}; 
+    else
+        dim_names = {'n'}; Arraydim = N_prb;
+    end
+
+    %
+    if strcmp(code,'meastimecluster')
+        class = 'MeasTimeCluster';
+        datatype = 'MeasTime';
+        arraytype = 'ArrayTime';
+        sd_struct = makeMeasTimeDS(Ntimefreq,N_prb,N_seq,N_aux,N_ref);
+        dims = [Arraydim Ntimefreq];
+        dim_names(end+1:end+2) = {'Time'};
+    elseif strcmp(code,'measspctcluster')
+        class = 'MeasSpctCluster';
+        datatype = 'MeasSpct';
+        arraytype = 'ArraySpct';
+        sd_struct = makeMeasSpctDS(Ntimefreq,N_prb,N_seq,N_aux,N_ref);
+        dims = [Arraydim Ntimefreq N_ref]; 
+        dim_names(end+1:end+2) =  {'Frequency','Reference_vect'};
+    else
+        error('err in meastimecluster/measspctcluster')
+    end
+    struct = makevgrstruct(clustername,class);  
+    struct.children = makevgrstruct('Measured Data',datatype);
+    struct.children(1).children = sd_struct;
+    struct.children(2) = makevgrstruct('Formated Data',arraytype);
+    struct.children(2).children = makesdsstruct(arraytype,dims,dim_names);
+
+%==============================================================================================================================        
+case 'meastime'
+    
+    nargchk(6,6,nargin);
+    N_time = varargin{2};
+    N_prb = varargin{3};
+    N_seq = varargin{4};
+    N_aux = varargin{5};
+    N_ref = varargin{6};
+    %
+    struct = makeMeasTimeDS(N_time,N_prb,N_seq,N_aux,N_ref);
+    
+%==============================================================================================================================        
+case 'measspct'
+
+    nargchk(6,6,nargin);
+    N_freq = varargin{2};
+    N_prb = varargin{3};
+    N_seq = varargin{4};
+    N_aux = varargin{5};
+    N_ref = varargin{6};
+    %
+    struct = makeMeasSpctDS(N_freq,N_prb,N_seq,N_aux,N_ref);
+    
+%==============================================================================================================================        
+case 'dataset'
+%   sds_struct = makeHDFstruct('DataSet',name,arraysize,dim_names)     
+    sdsname = varargin{2}; 
+    dims = varargin{3}; 
+    dim_names = varargin{4}; 
+    struct = makesdsstruct(sdsname,dims,dim_names);
+
+%==============================================================================================================================        
+case 'vgroup'
+    nargchk(3,3,nargin);
+    vgr_name = varargin{2};
+    vgr_class = varargin{3};
+    struct = makevgrstruct(vgr_name,vgr_class);
+
+%==============================================================================================================================        
+case 'vdata'
+    nargchk(4,4,nargin);   
+    vdt_name = varargin{2};
+    vdt_class = varargin{3};
+    datacell = varargin{4};
+    if iscell(datacell)
+       struct = makevdtstruct(vdt_name,vdt_class,datacell);
+    else
+       error('datacell should be a cell array with Vdata')    
+    end
+
+%==============================================================================================================================        
+otherwise
+    error('unknow HDF predefined structure')
+    
+%==============================================================================================================================        
+end   
+
+%+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+function sd_struct = makeEmptyDS
+%
+%  create 'General' empty Scientific Data substructure 
+%      sd_struct = makeEmptyDS
+%
+%    p sub-structure of group of DS connected to children(ii)
+%          type: 'Scientific Data Set'
+%    properties: [mx1 struct] -> parameters
+%              sd_struct.properties.filename = name;
+%              sd_struct.properties.class = class;
+%    attributes: [nx1 struct] -> attributes  (optional)
+%              sd_struct.attributes.attrname = value (string, scalar, vector ...)
+%   annotations: [rx1 struct] -> annotations (optional)
+%    sds_struct.annotations.label = {cell of strings};
+%    sds_struct.annotations.description = {cells of strings};
+%      children: [qx1 struct] -> (dimensions ?)
+%
+
+%
+    singleton_flag = 1;
+
+    %
+    sd_struct.type = 'HDF Scientific Data';
+    sd_struct.id   = [];
+    sd_struct.properties.filename = [];
+    sd_struct.properties.ndatasets = [];
+    sd_struct.properties.datasetnames = [];
+    sd_struct.attributes = [];
+    sd_struct.annotations.label = {};
+    sd_struct.annotations.description = {};
+    sd_struct.special = [];
+    
+    %--attributes
+    %
+    sd_struct.attributes.AStype = 'General';
+    sd_struct.attributes.name = '';
+    sd_struct.attributes.createdate = isodatestr;   % ISO 8601 
+    sd_struct.attributes.modifydate = '';
+    
+    %-- nb datasets
+    %
+    sd_struct.properties.ndatasets = 0;
+    sd_struct.properties.datasetnames = {};
+    
+%+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+function sd_struct = makeMeasSpctDS(N_freq,N_prb,N_seq,N_aux,N_ref)
+%
+%  create 'MeasSpct' Scientific Data substructure 
+%      sd_struct = makeMeasSpctDS(N_freq,N_prb,N_seq,N_aux,N_ref)
+%      sd_struct = makeMeasSpctDS(axefreq,axeprb,axeseq,axeaux,axeref)
+%
+%    p sub-structure of group of DS connected to children(ii)
+%          type: 'Scientific Data Set'
+%    properties: [mx1 struct] -> parameters
+%              sd_struct.properties.filename = name;
+%              sd_struct.properties.class = class;
+%    attributes: [nx1 struct] -> attributes  (optional)
+%              sd_struct.attributes.attrname = value (string, scalar, vector ...)
+%   annotations: [rx1 struct] -> annotations (optional)
+%    sds_struct.annotations.label = {cell of strings};
+%    sds_struct.annotations.description = {cells of strings};
+%      children: [qx1 struct] -> (dimensions ?)
+%
+%  Note : it is now possible to use singletons in Matlab array (jcp 01/10/03) 
+%  Modification : correct properties.ndatasets and set properties.ndatasetnames  (jcp 31/10/05)
+%                 possibility to store Refarray without Xspct and Aspct_prb when axeref equal to axeprb (jcp 14/08/07)
+%
+    singleton_flag = 1;
+
+    if length(N_freq)+length(N_prb)+length(N_seq)+length(N_aux)+length(N_ref)>5
+        axefreq = N_freq; N_freq = length(N_freq);
+        axeprb = N_prb; N_prb = length(N_prb);
+        axeseq = N_seq; N_seq = length(N_seq);
+        axeaux = N_aux; N_aux = length(N_aux);
+        axeref = N_ref; N_ref = length(N_ref);
+        axe_flag = 1;
+    else
+        axe_flag = 0;    
+    end
+    if N_freq==0|N_prb==0|N_seq==0|N_ref==0
+        error('N_freq, N_prb, N_seq and N_ref should not be zero'),
+    end
+        
+    %
+    sd_struct.type = 'HDF Scientific Data';
+    sd_struct.id   = [];
+    sd_struct.properties.filename = [];
+    sd_struct.properties.ndatasets = [];
+    sd_struct.properties.datasetnames = [];
+    sd_struct.attributes = [];
+    sd_struct.annotations.label = {};
+    sd_struct.annotations.description = {};
+    sd_struct.children.type = [];
+    sd_struct.children.properties = [];
+    sd_struct.children.children = [];
+    sd_struct.special = [];
+    
+    %--attributes
+    %
+    sd_struct.attributes.AStype = 'MeasSpct';
+    sd_struct.attributes.name = '';
+    sd_struct.attributes.createdate = isodatestr;   % ISO 8601 % change for compilation 05/09/03
+    %%% sd_struct.attributes.createdate = datestr(datenum(now),30);   % ISO 8601;
+    sd_struct.attributes.modifydate = '';
+    sd_struct.attributes.frequency_raws = N_freq;
+    sd_struct.attributes.probe_num = N_prb;
+    sd_struct.attributes.aux_num = N_aux;
+    sd_struct.attributes.seq_num = N_seq;
+    sd_struct.attributes.ref_num = N_ref;
+
+    n = 0;
+    %-- Xspct_Re Data Set
+    %
+    if ~isequal(axeprb,axeref)
+        n = n + 1;
+        dims = [N_freq N_prb N_seq N_ref]; 
+        dim_names = {'Frequency','Probe_no','Sequence_no','Reference_no'};
+        if axe_flag==1, axevectorcell = {axefreq,axeprb,axeseq,axeref}; else, axevectorcell = []; end
+        sd_struct.children = makesdsstruct('Xspct_Re',dims,dim_names,axevectorcell,'double',singleton_flag);
+        datasetnames{n} = 'Xspct_Re';
+    end
+    
+    %-- Xspct_Im Data Set
+    %
+    if ~isequal(axeprb,axeref)
+        n = n + 1;
+        dims = [N_freq N_prb N_seq N_ref]; 
+        dim_names = {'Frequency','Probe_no','Sequence_no','Reference_no'};
+        if axe_flag==1, axevectorcell = {axefreq,axeprb,axeseq,axeref}; else, axevectorcell = []; end
+        sd_struct.children(n) = makesdsstruct('Xspct_Im',dims,dim_names,axevectorcell,'double',singleton_flag);
+        datasetnames{n} = 'Xspct_Im';
+    end
+    
+    %-- Aspct_prb Data Set
+    %
+    if ~isequal(axeprb,axeref)
+        n = n + 1;
+        dims = [N_freq N_prb N_seq]; 
+        dim_names = {'Frequency','Probe_no','Sequence_no'};
+        if axe_flag==1, axevectorcell = {axefreq,axeprb,axeseq}; else, axevectorcell = []; end
+        sd_struct.children(n) = makesdsstruct('Aspct_prb',dims,dim_names,axevectorcell,'double',singleton_flag);
+        datasetnames{n} = 'Aspct_prb';
+    end
+    
+    %-- Aspct_aux Data Set
+    %
+    if N_aux~=0
+        n = n + 1;
+        dims = [N_freq N_aux N_seq]; 
+        dim_names = {'Frequency','Aux_no','Sequence_no'};
+        if axe_flag==1, axevectorcell = {axefreq,axeaux,axeseq}; else, axevectorcell = []; end
+        sd_struct.children(n) = makesdsstruct('Aspct_aux',dims,dim_names,axevectorcell,'double',singleton_flag);
+        datasetnames{n} = 'Aspct_aux';
+    end
+    
+    
+    %-- Refarray_Re Data Set
+    %
+    n = n + 1;
+    Nrefmat = N_ref*(N_ref + 1)/2;
+    dims = [N_freq Nrefmat N_seq]; 
+    dim_names = {'Frequency','Ref_order','Sequence_no'};
+    if axe_flag==1, axevectorcell = {axefreq,1:Nrefmat,axeseq}; else, axevectorcell = []; end
+    if ~isequal(axeprb,axeref)
+        sd_struct.children(n) = makesdsstruct('Refarray_Re',dims,dim_names,axevectorcell,'double',singleton_flag);
+    else
+        sd_struct.children = makesdsstruct('Refarray_Re',dims,dim_names,axevectorcell,'double',singleton_flag);
+    end
+    datasetnames{n} = 'Refarray_Re';
+    
+    %-- Refarray_Im Data Set
+    %
+    n = n + 1;
+    Nrefmat = N_ref*(N_ref + 1)/2;
+    dims = [N_freq Nrefmat N_seq]; 
+    dim_names = {'Frequency','Ref_order','Sequence_no'};
+    if axe_flag==1, axevectorcell = {axefreq,1:Nrefmat,axeseq}; else, axevectorcell = []; end
+    sd_struct.children(n) = makesdsstruct('Refarray_Im',dims,dim_names,axevectorcell,'double',singleton_flag);
+    datasetnames{n} = 'Refarray_Im';
+    
+    %-- Coordinates Data Set
+    %
+    n = n + 1;
+    dims = [3 N_prb N_seq];
+    dim_names = {'Coordvector','Probe_no','Sequence_no'};    
+    if axe_flag==1, axevectorcell = {1:3,axeprb,axeseq}; else, axevectorcell = []; end
+    sd_struct.children(n) = makesdsstruct('Coordinates',dims,dim_names,axevectorcell,'double',singleton_flag);
+    CoordinateSystem = {'cartesian','polar','spherical'};
+    sd_struct.children(n).attributes.coordsys = CoordinateSystem{1};
+    datasetnames{n} = 'Coordinates';
+    
+    %-- IndexMap Data Set
+    %
+    n = n + 1;
+    dims = [2 N_prb N_seq]; 
+    dim_names = {'Indexvector','Probe_no','Sequence_no'};   % Indexvector : 1 -> yr, 2 -> xr
+    if axe_flag==1, axevectorcell = {1:2,axeprb,axeseq}; else, axevectorcell = []; end
+    sd_struct.children(n) = makesdsstruct('IndexMap',dims,dim_names,axevectorcell,'double',singleton_flag);
+    ArraySystem = {'rectangular','cluster'};
+    sd_struct.children(n).attributes.arraysys = ArraySystem{1};
+    datasetnames{n} = 'IndexMap';
+    
+    %-- nb datasets
+    %
+    sd_struct.properties.ndatasets = n;
+    sd_struct.properties.datasetnames = datasetnames;
+        
+    
+%+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+function sd_struct = makeMeasTimeDS(N_time,N_prb,N_seq,N_aux,N_ref)
+%
+%  create 'MeasTime' Scientific Data substructure 
+%
+%      sd_struct = makeMeasTimeDS(N_time,N_prb,N_seq,N_aux,N_ref)
+%      sd_struct = makeMeasSpctDS(axetime,axeprb,axeseq,axeaux,axeref)
+%
+%    p sub-structure of group of DS connected to children(ii)
+%          type: 'Scientific Data Set'
+%    properties: [mx1 struct] -> parameters
+%              sd_struct.properties.filename = name;
+%              sd_struct.properties.class = class;
+%    attributes: [nx1 struct] -> attributes  (optional)
+%              sd_struct.attributes.attrname = value (string, scalar, vector ...)
+%   annotations: [rx1 struct] -> annotations (optional)
+%    sds_struct.annotations.label = {cell of strings};
+%    sds_struct.annotations.description = {cells of strings};
+%      children: [qx1 struct] -> (dimensions ?)
+%
+%  Note : it is now possible to use singletons in Matlab array (jcp 01/10/03) 
+%  Modification : correct properties.ndatasets and set properties.ndatasetnames  (jcp 31/10/05)
+%
+
+    singleton_flag = 1;
+
+    if length(N_time)+length(N_prb)+length(N_seq)+length(N_aux)+length(N_ref)>5
+        axetime = N_time; N_time = length(N_time);
+        axeprb = N_prb; N_prb = length(N_prb);
+        axeseq = N_seq; N_seq = length(N_seq);
+        axeaux = N_aux; N_aux = length(N_aux);
+        axeref = N_ref; N_ref = length(N_ref);
+       axe_flag = 1;
+    else
+        axe_flag = 0;    
+    end
+    if N_time==0|N_seq==0|(N_prb==0&N_aux==0&N_ref==0)
+        error('N_time, N_seq and one of N_prb or N_aux or N_ref should not be zero'),
+    end
+
+    %
+    sd_struct.type = 'HDF Scientific Data';
+    sd_struct.id   = [];
+    sd_struct.properties.filename = [];
+    sd_struct.properties.ndatasets = [];
+    sd_struct.properties.datasetnames = [];
+    sd_struct.attributes = [];
+    sd_struct.annotations.label = {};
+    sd_struct.annotations.description = {};
+    sd_struct.children.type = [];
+    sd_struct.children.properties = [];
+    sd_struct.children.children = [];
+    sd_struct.special = [];
+
+    %--attributes
+    %
+    sd_struct.attributes.AStype = 'MeasTime';
+    sd_struct.attributes.name = '';
+    sd_struct.attributes.createdate = isodatestr;   % change for compilation 05/09/03  % ISO 8601
+    sd_struct.attributes.modifydate = '';
+    sd_struct.attributes.time_samples = N_time;
+    sd_struct.attributes.probe_num = N_prb;
+    sd_struct.attributes.aux_num = N_aux;
+    sd_struct.attributes.seq_num = N_seq;
+    sd_struct.attributes.ref_num = N_ref;
+    
+    n = 0;
+    %-- Time_prb Data Set
+    %
+    if N_prb~=0
+        n = n + 1;
+        dims = [N_time N_prb N_seq]; 
+        dim_names = {'Time','Probe_no','Sequence_no'};
+        if axe_flag==1, axevectorcell = {axetime,axeprb,axeseq}; else, axevectorcell = []; end      
+        sd_struct.children = makesdsstruct('Time_prb',dims,dim_names,axevectorcell,'double',singleton_flag);
+        datasetnames{n} = 'Time_prb';
+    end
+    
+
+    %-- Time_aux Data Set
+    %    
+    if N_aux~=0
+        n = n + 1;
+        dims = [N_time N_aux N_seq]; 
+        dim_names = {'Time','Aux_no','Sequence_no'};
+        if axe_flag==1, axevectorcell = {axetime,axeaux,axeseq}; else, axevectorcell = []; end
+        if n==1
+            sd_struct.children = makesdsstruct('Time_aux',dims,dim_names,axevectorcell,'double',singleton_flag);
+        else
+            sd_struct.children(n) = makesdsstruct('Time_aux',dims,dim_names,axevectorcell,'double',singleton_flag);
+        end    
+        datasetnames{n} = 'Time_aux';
+    end
+    
+    %-- Time_ref Data Set
+    %
+    if N_ref~=0
+        n = n + 1;
+        dims = [N_time N_ref N_seq]; 
+        dim_names = {'Time','Ref_no','Sequence_no'};
+        if axe_flag==1, axevectorcell = {axetime,axeref,axeseq}; else, axevectorcell = []; end
+        if n==1
+            sd_struct.children = makesdsstruct('Time_ref',dims,dim_names,axevectorcell,'double',singleton_flag);
+        else
+            sd_struct.children(n) = makesdsstruct('Time_ref',dims,dim_names,axevectorcell,'double',singleton_flag);
+        end
+        datasetnames{n} = 'Time_ref';
+    end
+    
+    if N_prb~=0
+        
+        %-- Coordinates Data Set
+        %
+        n = n + 1;
+        dims = [3 N_prb N_seq];
+        dim_names = {'Coordvector','Probe_no','Sequence_no'};    
+        if axe_flag==1, axevectorcell = {1:3,axeprb,axeseq}; else, axevectorcell = []; end
+        sd_struct.children(n) = makesdsstruct('Coordinates',dims,dim_names,axevectorcell,'double',singleton_flag);
+        CoordinateSystem = {'cartesian','polar','spherical'};
+        sd_struct.children(n).attributes.coordsys = CoordinateSystem{1};
+        datasetnames{n} = 'Coordinates';
+    
+        %-- IndexMap Data Set
+        %
+        n = n + 1;
+        dims = [2 N_prb N_seq]; 
+        dim_names = {'Indexvector','Probe_no','Sequence_no'};   % Indexvector : 1 -> yr, 2 -> xr
+        if axe_flag==1, axevectorcell = {1:2,axeprb,axeseq}; else, axevectorcell = []; end
+        sd_struct.children(n) = makesdsstruct('IndexMap',dims,dim_names,axevectorcell,'double',singleton_flag);
+        ArraySystem = {'rectangular','cluster'};
+        sd_struct.children(n).attributes.arraysys = ArraySystem{1};
+        datasetnames{n} = 'IndexMap';
+    
+    end  % if N_prb~=0
+    
+    %-- nb datasets
+    %
+    sd_struct.properties.ndatasets = n;
+    sd_struct.properties.datasetnames = datasetnames;
+    
+%+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+function sds_struct = makesdsstruct(sds_name,dims,dim_names,axevectorcell,datatype,singleton_flag)
+%
+%  sds_struct = makesdsstruct(sds_name,dims,dim_names) ...,axevectorcell) ...,datatype)
+%
+%  create SDS substructure in forgeten dimension with only one element (narin<6 or singleton_flag = 0)
+%  or use all dimension if singleton_flag = 1.
+%    if dim_names is empty, children substructure is not created
+%    if dim_names{ii} is empty, children substructure is created but its properties name is not changed
+%
+%    p sub-structure of a Scientific Data Set connected to children(ii)
+%          type: 'Scientific Data Set'
+%            id: []
+%    properties: [mx1 struct] -> parameters
+%              sds_struct.properties.name = ds_name;
+%              sds_struct.properties.size = fliplr(ds_dims); [ Matlab style ]
+%              sds_struct.properties.datatype = ds_type;   (optional : default = 'double')
+%              sds_struct.properties.data = array;         (optional)
+%    attributes: [nx1 struct] -> attributes  (optional)
+%              sds_struct.attributes.FillValue = value (0)
+%              sds_struct.attributes.attrname = value (string, scalar, vector ...)
+%   annotations: [rx1 struct] -> annotations  (optional)
+%              sds_struct.annotations.label = cell of strings
+%              sds_struct.annotations.description = cell of strings
+%      children: [qx1 struct] -> dimensions in Matlab order
+%
+%   q sub-structures of dimensions of the Data Set
+%              sds_struct.children(ndim).type = 'dimension';
+%              sds_struct.children(ndim).properties.name = name;
+%              sds_struct.children(ndim).properties.axevector = scale; (optional)
+%              sds_struct.children(ndim).properties.datatype = data_type; (optional : default = 'double')
+%              sds_struct.children(ndim).attributes.attrname = value (optional : string, scalar, vector ...)
+%
+%  Modified by jcp to use singletons in Matlab array (jcp 01/10/03)
+%  Modified by jcp : add sds_struct.id = [] and sds_struct.special = [] (jcp 31/10/05)
+%
+if nargin<6, singleton_flag = 0; end
+if nargin<5, datatype = 'double'; end
+if nargin<4|isempty(axevectorcell), axe_flag = 0; else, axe_flag = 1; end
+    sds_struct.type = 'Scientific Data Set';
+    sds_struct.id = [];
+    sds_struct.properties.name = sds_name; 
+    sds_struct.properties.datatype = datatype;
+    sds_struct.properties.data = [];
+    sds_struct.attributes.FillValue = 0;
+    sds_struct.attributes.protect = 'off';
+    %sds_struct.annotations.label = {};
+    %sds_struct.annotations.description = {};
+    sds_struct.children = [];
+    ds_rank = 0;
+    for ii=1:length(dims)
+        if dims(ii)~=1|singleton_flag==1
+            ds_rank = ds_rank + 1;
+            ds_dims(ds_rank) = dims(ii);
+            if ~isempty(dim_names)
+                sds_struct.children(ds_rank).type = 'dimension';
+                if ~isempty(dim_names{ii})
+                    sds_struct.children(ds_rank).properties.name = dim_names{ii};
+                end
+                if axe_flag==1
+                    sds_struct.children(ds_rank).properties.axevector = axevectorcell{ii};
+                end
+            end
+        end
+    end
+    % sds_struct.properties.dimensions = ds_rank;
+    sds_struct.properties.size = ds_dims;
+    sds_struct.special = [];
+
+%+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+function vgr_struct = makevgrstruct(vgr_name,vgr_class)
+%
+%  create Vgroup substructure 
+%
+%    p sub-structure of a Vgroup connected to children(ii)
+%          type: 'Vgroup'
+%    properties: [mx1 struct] -> parameters
+%              vgr_struct.properties.name = name;
+%              vgr_struct.properties.class = class;
+%    attributes: [nx1 struct] -> attributes  (optional)
+%              vgr_struct.attributes.attrname = value (string, scalar, vector ...)
+%      children: [qx1 struct] -> Vgroup, Vdata, SDS, AN, DF24, DFR8
+%
+    vgr_struct.type = 'Vgroup';
+    vgr_struct.properties.name = vgr_name; 
+    vgr_struct.properties.class = vgr_class;
+    vgr_struct.children = [];
+    
+%+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+function vdt_struct = makevdtstruct(vdt_name,vdt_class,datacell)
+%
+%  create Vdata substructure 
+%
+%    p sub-structure of a Vdata connected to children(ii)
+%          type: 'Vdata'
+%    properties: [mx1 struct] -> parameters
+%              vdt_struct.properties.name = name;
+%              vdt_struct.properties.class = class;
+%              sds_struct.properties.datatype = datatype;   (optional cell: default = automatic 'double' or 'char')
+%              sds_struct.properties.data = datacell;       (optional)
+%    attributes: [nx1 struct] -> attributes  (optional)
+%              vdt_struct.attributes.attrname = value (string, scalar, vector ...) for Vdata
+%              vdt_struct.attributes.fieldname.attrname = value (string, scalar, vector ...) for Vdata field
+%      children: [qx1 struct] -> [] or AN
+%
+if nargin<3, datacell = []; end
+
+    vdt_struct.type = 'Vdata';
+    vdt_struct.properties.name = vdt_name; 
+    vdt_struct.properties.class = vdt_class;
+    vdt_struct.properties.data = datacell;
+    vdt_struct.children = [];
+    

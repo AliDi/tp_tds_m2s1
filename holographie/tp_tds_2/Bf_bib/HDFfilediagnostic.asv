@@ -1,0 +1,209 @@
+function HDFfilediagnostic(hdffilename,fid)
+%HDFfilediagnostic
+%
+% PURPOSE
+%        List hdf-file information and channel identification
+%
+% SYNOPSIS
+%       HDFfilediagnostic(filename)
+%       HDFfilediagnostic(filename,fid)
+%
+% DESCRIPTION
+%    hdffilename -> name of the hdf file
+%    fid         -> 1 : affichage sur l'écran, 0: creation d'un fichier
+%
+% SEE ALSO
+%        
+
+% EXAMPLES   
+%
+% ALGORITHM
+%    
+% REFERENCES
+%
+% Comments:   
+%           
+% Matlab Toolbox functions used: 
+%
+% External librairies and languages: none
+%
+% Test procedure: 
+%
+% Copyright 1997-2008 VisualVibroAcoustics
+% jf 10/12/08                                                                                                 version 10/12/08 
+%-------------------------------------------------------------------------------------------------------------------------------
+%  name  |   date    |  modification description
+%-------------------------------------------------------------------------------------------------------------------------------
+%        |           |
+%-------------------------------------------------------------------------------------------------------------------------------
+if nargin==0, hdffilename = []; end
+
+[FileName,PathName] = uigetfile('*.hdf','Entrer un fichier hdf');
+if ischar(FileName) 
+    %-- affichage fichier temporel
+    hdffilename = [PathName '\' FileName]; 
+
+HDF_struct = HDFfileAScontrol('getinfo',hdffilename);
+if isempty(HDF_struct), error('no valid input file is selected or this file is not in the path'), end
+
+%-- diagnostic print
+if nargin<2, fid = 1; end
+
+
+%--- read information
+Nprb = HDF_struct.attributes.probe_num;
+Nseq = HDF_struct.attributes.seq_num;
+Naux = HDF_struct.attributes.aux_num;
+Nref = HDF_struct.attributes.ref_num;
+
+testcell = {'Coordinates','IndexMap'};
+for ii=1:length(testcell) 
+    if ~any(strcmp(HDF_struct.properties.datasetnames,testcell(ii))), error(['incomplet dataset : ',testcell{ii},' is missing']); end, 
+end 
+
+%-- pre-processing for annotations
+
+in_struct.ASHDFVer = HDFfileAScontrol('getannotations',hdffilename,'file_label','$$VVAHDF4AS030$$');
+if ~isempty(in_struct.ASHDFVer), in_struct.ASHDFVer = {in_struct.ASHDFVer{1}}; end
+
+in_struct.ApplName = HDFfileAScontrol('getannotations',hdffilename,'file_label','$$ApplName$$');
+if ~isempty(in_struct.ApplName), in_struct.ApplName = {in_struct.ApplName{1}(13:end)}; end
+
+in_struct.ApplVers = HDFfileAScontrol('getannotations',hdffilename,'file_label','$$ApplVers$$');
+if ~isempty(in_struct.ApplVers), in_struct.ApplVers = {in_struct.ApplVers{1}(13:end)}; end
+
+in_struct.ApplSrcp = HDFfileAScontrol('getannotations',hdffilename,'file_label','$$ApplSrcp$$');
+if ~isempty(in_struct.ApplSrcp), in_struct.ApplSrcp = {in_struct.ApplSrcp{1}(13:end)}; end
+
+in_struct.ApplTemp = HDFfileAScontrol('getannotations',hdffilename,'file_label','$$ApplTemp$$');
+if ~isempty(in_struct.ApplTemp), in_struct.ApplTemp = {in_struct.ApplTemp{1}(13:end)}; end
+
+in_struct.TestLabe = HDFfileAScontrol('getannotations',hdffilename,'file_label','$$TestLabe$$');
+if ~isempty(in_struct.TestLabe), in_struct.TestLabe = {in_struct.TestLabe{1}(13:end)}; end
+
+in_struct.TestName = HDFfileAScontrol('getannotations',hdffilename,'file_label','$$TestName$$');
+if ~isempty(in_struct.TestName), in_struct.TestName = {in_struct.TestName{1}(13:end)}; end
+
+in_struct.TestDate = HDFfileAScontrol('getannotations',hdffilename,'file_label','$$TestDate$$');
+if ~isempty(in_struct.TestDate), in_struct.TestDate = {in_struct.TestDate{1}(13:end)}; end
+
+in_struct.TestDesc = HDFfileAScontrol('getannotations',hdffilename,'file_desc','$$TestDesc$$');
+if ~isempty(in_struct.TestDesc), in_struct.TestDesc = {in_struct.TestDesc{1}(13:end)}; end
+
+in_struct.TestFreq = HDFfileAScontrol('getannotations',hdffilename,'file_desc','$$TestFreq$$');
+if ~isempty(in_struct.TestFreq), in_struct.TestFreq = {in_struct.TestFreq{1}(13:end)}; end
+
+in_struct.TestDraw = HDFfileAScontrol('getannotations',hdffilename,'file_desc','$$TestDraw$$');
+if ~isempty(in_struct.TestDraw), in_struct.TestDraw = {in_struct.TestDraw{1}(13:end)}; end
+
+in_struct.ApplSrcplimt = HDFfileAScontrol('getannotations',hdffilename,'file_label','$$ApplSrcplimt$$');
+if ~isempty(in_struct.ApplSrcplimt), in_struct.ApplSrcplimt = {in_struct.ApplSrcplimt{1}(17:end)}; end
+
+in_struct.TestLoc2glob = HDFfileAScontrol('getannotations',hdffilename,'file_label','$$TestLoc2glob$$');
+if ~isempty(in_struct.TestLoc2glob), in_struct.TestLoc2glob = {in_struct.TestLoc2glob{1}(17:end)}; end
+
+in_struct.TestOrig_loc = HDFfileAScontrol('getannotations',hdffilename,'file_label','$$TestOrig_loc$$');
+if ~isempty(in_struct.TestOrig_loc), in_struct.TestOrig_loc = {in_struct.TestOrig_loc{1}(17:end)}; end
+
+in_struct.Trackability = HDFfileAScontrol('getannotations',hdffilename,'file_desc','$$Trackability$$');
+if ~isempty(in_struct.Trackability), in_struct.Trackability = {in_struct.Trackability{1}(17:end)}; end
+
+%-- ceation du fichier diagnostic .txt
+if fid~=1 
+    if strcmp(hdffilename(end-3:end),'.hdf'), txtfilename = hdffilename(1:end-4); else, txtfilename = hdffilename; end
+    txtfilename = [txtfilename,'.txt'];
+    fid = fopen(txtfilename,'w'); 
+end
+
+%-- sous structure annotation
+fprintf(fid,'\n   ')
+fprintf(fid,'\n Visual VibroAcoustics - HDF (version 4) file for Acoustic Scanner')
+fprintf(fid,'\n   ')
+fprintf(fid,['\n DESIGNATION DE L''ESSAI (annotations)'])
+fprintf(fid,['\n                               Application associée :  ' in_struct.ApplName{:}])
+fprintf(fid,['\n                                Version du logiciel :  ' in_struct.ApplVers{:}])
+fprintf(fid,['\n               N° de version AS de la structure HDF :  ' in_struct.ASHDFVer{:}])
+fprintf(fid,'\n   ')
+fprintf(fid,['\n                Désignation de l''essai (nom court) :  ' in_struct.TestLabe{:}])
+fprintf(fid,['\n                                   Date de l''essai :  ' in_struct.TestDate{:}])
+fprintf(fid,['\n                         Nom de l''essai (nom long) :  '])
+txtcell = textnwrap(in_struct.TestName,64);
+for ii=1:length(txtcell), disp(['                ' txtcell{ii}]), end
+fprintf(fid,['\n                            Description de l''essai :  '])
+txtcell = textnwrap(in_struct.TestDesc,64);       
+for ii=1:length(txtcell), disp(['                ' txtcell{ii}]), end
+fprintf(fid,'\n  ')
+fprintf(fid,'\n     Paramètres de l''essai')
+fprintf(fid,['\n                   Coord. point sur plan source [m] :  ' in_struct.ApplSrcp{:}])
+fprintf(fid,['\n         Limites représentation sur plan source [m] :  ' in_struct.ApplSrcplimt{:}])
+fprintf(fid,['\n                                   Température [°C] :  ' in_struct.ApplTemp{:}])
+fprintf(fid,['\n  Origine du repère local dans le repère global [m] :  ' in_struct.TestOrig_loc{:}])
+fprintf(fid,['\n    Matrice de passage repère local vers global [m] :  ' in_struct.TestLoc2glob{:}])
+fprintf(fid,'\n   ')
+fprintf(fid,['\n    Note : La distance source-hologramme est calculée à partir des coordonnées d''un point sur'])
+fprintf(fid,['\n           le plan source en m (ex: [0 0 -0.04] pour un plan hologramme positionné à z = 0 '])
+fprintf(fid,['\n           constant et situé à une distance de 4 cm du plan source).'])
+fprintf(fid,['\n           La température sera supposée etre de 20°C si elle n''est pas spécifiée. '])
+fprintf(fid,['\n                               label de traçabilité :  ' in_struct.Trackability{:}])
+fprintf(fid,'\n   ')
+
+% sous structure attributes
+fprintf(fid,'\n   ')
+fprintf(fid,['\n CARACTERISTIQUES GENERALES DU FICHIER (attributes)'])
+attributesnames = fieldnames(HDF_struct.attributes);
+for ii=1:length(attributesnames)
+    resfield = getfield(HDF_struct.attributes,attributesnames{ii});
+    fieldname = '                             : '; 
+    lenattrname = length(attributesnames{ii});
+    fieldname(30-lenattrname:29) = attributesnames{ii};
+    if isnumeric(resfield)
+        fprintf(fid,'\n  %s %d',fieldname,getfield(HDF_struct.attributes,attributesnames{ii}));
+    else
+        fprintf(fid,'\n  %s %s',fieldname,getfield(HDF_struct.attributes,attributesnames{ii}));
+    end
+end
+
+% coordonnées
+fprintf(fid,'\n   ')
+fprintf(fid,['\n DESIGNATION DE L''ESSAI (annotations)'])
+fprintf(fid,'\n   ')
+fprintf(fid,'\n Seq no    Probe no    x       y       z        i   j')
+for ii=1:Nseq
+    Coordinates = HDFfileAScontrol('getdata',hdffilename,'Coordinates',':',':',ii);
+    IndexMap = HDFfileAScontrol('getdata',hdffilename,'IndexMap',':',':',ii);
+    for jj=1:Nprb
+        fprintf(fid,'\n   %2.0f        %2.0f      %5.3f   %5.3f   %5.3f     %2.0f  %2.0f',ii,jj,Coordinates(:,jj),IndexMap(:,jj));
+    end
+end
+
+
+if fid~=1 
+    status = fclose(fid);   
+    disp(' '),
+    disp(['     le fichier diagnostic ' txtfilename ' est enregistré']),
+end
+disp(' '),
+
+%==========================================================================================
+function  txtcell = textnwrap(longstring,nchar)
+%
+%  wrap and display a long string (or cell) in a textcell
+%      dispwrap(longstring,nchar,fid)
+%      dispwrap(longstring,nchar)
+%  see if lines are \n delimited and wrap in nchar long
+%
+if isempty(longstring), longstring = ''; end           % string, cell or ''
+if ~iscell(longstring), longstring = {longstring}; end % cell: minimal {''} 
+txtcell = {}; 
+for ii=1:length(longstring)
+    work = longstring{ii};
+    if length(work)<2, work = [work '\n']; end
+    if ~strcmp(work(end-1:end),'\n'), work = [work '\n']; end
+    ind = findstr(work,'\n'); deb = 1;
+    for jj=1:length(ind)
+        fin = ind(jj) - 1;
+        wrapwork = textwrap({work(deb:fin)},nchar);
+        for kk=1:length(wrapwork), txtcell{end+1} = wrapwork{kk}; end
+        deb = fin + 3;
+    end
+end

@@ -1,0 +1,526 @@
+function [sd_struct,status,errtype] = hdf2struct(var1,code)
+%hdf2struct
+%
+% PURPOSE
+%    Make structure from an HDF file
+%
+% SYNOPSIS
+%      sd_struct = hdf2struct(filename,code)
+%      obj_struct = hdf2struct(obj_id,code)
+%      sds_struct = hdf2struct(sds_id,code)   (without annotations: the AN interface is not open)
+%      [sd_struct,status,errtype] = hdf2struct(...)
+%
+% DESCRIPTION
+%
+%        filename  -> name of the HDF file (in this case, file is closed at the end)
+%        sd_id     -> identifier of HDF file 
+%        sds_id    -> identifier of a Data Set
+%        code      -> if code is a string :
+%                        'short' :  basic structure (without children)
+%                     'complete' :  complete but without dataset
+%                         'full' :  complete with dataset data
+%                     if code is a structure with fields :
+%                        style     : 'short', ['complete'], 'full'
+%                        dscontrol :  'systematic', the function use the systematic process, 
+%                                                   without look for data set contained scale
+%                        dscontrol :  ['smart'], the dataset with scale are correctly precessed.
+%                        singleton :  ['on'], 'off'  
+%        sd_struct -> structure corresponding to the HDF file
+%        status    -> status 0 if ok or -1 if operation fail
+%        errtype   -> cell of the types of error
+%
+%    Create a structure with the fields :
+%          type: 'HDF Scientific Data' (HDF-SD file)
+%            id: 32111
+%    properties: [mx1 struct] -> parameters
+%    attributes: [nx1 struct] -> attributes
+%   annotations: [qx1 struct] -> annotations with 'label' and  'description' fields
+%      children: [px1 struct] -> data sets (HDF-SD file) or dimensions
+%       special: []
+%
+% SEE ALSO
+%   
+
+% EXAMPLES   
+%
+% ALGORITHM
+%    
+% REFERENCES
+%    Matlab, Using Matlab, Version 6, 2002 (R13).
+%
+% Comments:   
+%
+% Matlab Toolbox functions used: seterr
+%
+% External librairies and languages: none
+%
+% Test procedure: none
+%
+% Copyright 1997-2004 VisualVibroAcoustics
+% jcp 22/10/02                                             version 21/12/03 
+%--------------------------------------------------------------------------
+%  name  |   date   |  modification description
+%--------------------------------------------------------------------------
+%  jcp   | 08/10/03 | possibility to read array with singletons and  
+%        |          | file and data annotations.
+%--------------------------------------------------------------------------
+show = 0;
+
+%--validity control 1
+%
+nargchk(1,2,nargin);
+nargchk(1,3,nargout);
+status = 0; errtype = {};
+
+style = 'complete'; dscontrol = 'smart'; singleton = 'on'; % default
+if nargin>1&ischar(code)
+    style = lower(code); 
+elseif nargin>1&isstruct(code)
+    codenames = fieldnames(code);
+    if ~isempty(find(strcmp(codenames,'style'))), style = lower(code.style); end
+    if ~isempty(find(strcmp(codenames,'dscontrol'))), dscontrol = lower(code.dscontrol); end 
+    if ~isempty(find(strcmp(codenames,'singleton'))), singleton = lower(code.singleton); end 
+end
+
+%--validity control 1
+%
+sd_struct = [];
+if isempty(var1)
+    [status,errtypelist] = seterr(-1,status,errtype,'hdf2struct: empty file',show);
+elseif ischar(var1)
+    [id,err_type,filename] = find_file_id(var1,'read');
+    [status,errtype] = seterr(id,status,errtype,'hdf2struct: fail read',show);
+    hdfobjname = 'hdf file';
+    close_flag = 1;
+else
+    id = var1;
+    [stat,hdfobjname] = hdfid2info(id);
+    [status,errtype] = seterr(stat,status,errtype,'hdf2struct: hdfid2info',show);
+    an_id = -1;
+    close_flag = 0;
+end
+
+%==========================================================================
+if status>=0
+    switch hdfobjname
+        
+    %----------------------------------------------------------------------
+    case 'hdf file'
+    %
+    %-- open the HDF interfaces
+    %
+    sd_id = hdfsd('start',filename,'read');   % start SD interface
+    [status,errtype] = seterr(sd_id,status,errtype,'hdf2struct: fail SDstart',show);
+    an_id = hdfan('start',id);              % start AN interface
+    [status,errtype] = seterr(an_id,status,errtype,'hdf2struct: fail ANstart',show);
+
+    %-- process SD structure
+    %
+    [ndatasets,nglobal_attr,stat] = hdfsd('fileinfo',sd_id);
+    [status,errtype] = seterr(stat,status,errtype,'hdf2struct: fileinfo',show);
+    if status==0
+        sds_id = 0;
+        sd_struct.type = 'HDF Scientific Data';
+        sd_struct.id   = sd_id;
+        sd_struct.properties.filename = filename;
+        sd_struct.properties.ndatasets = 0;
+        sd_struct.properties.datasetnames = [];
+        sd_struct.attributes = [];
+        sd_struct.annotations = [];
+        sd_struct.children = [];
+        sd_struct.special = [];
+        %-- read global attributes
+        for ii=0:nglobal_attr-1
+            [name,data_type,count,stat] = hdfsd('attrinfo',sd_id,ii);
+            [status,errtype] = seterr(stat,status,errtype,'hdf2struct: attrinfo',show);
+            if status==0&~isempty(name)
+                [data,status] = hdfsd('readattr',sd_id,ii);
+                [status,errtype] = seterr(stat,status,errtype,'hdf2struct: readattr',show);
+                sd_struct.attributes = setfield(sd_struct.attributes,name,data);
+            end
+        end
+        %-- read file annotations
+        [label,desc,stat,errtypelist] = make_an_struct(an_id,[],[]);
+        [status,errtype] = seterr(stat,status,errtype,errtypelist,show);
+        if stat~=-1
+            sd_struct.annotations.label = label;
+            sd_struct.annotations.description = desc;
+        end
+        %-- read data sets
+        nds = 0;
+        for jj=1:ndatasets
+            sds_id = hdfsd('select',sd_id,jj-1);
+            [status,errtype] = seterr(sds_id,status,errtype,'hdf2struct: select',show);
+            if sds_id~=-1
+                if strcmp(dscontrol,'systematic')
+                    tf = 0;
+                else
+                    tf = hdfsd('iscoordvar',sds_id);
+                end
+                if tf==0
+                    nds = nds + 1;
+                    ds_name = hdfsd('getinfo',sds_id);
+                    sd_struct.properties.datasetnames{nds} = ds_name;
+                    if ~strcmp(style,'short')
+                        sds_struct = make_sds_struct(sds_id,style,dscontrol);
+                        if ~strcmp(singleton,'off'), sds_struct = sds_singletoninvfilter(sds_struct); end
+                        sd_struct.children(nds).type = sds_struct.type;
+                        sd_struct.children(nds).id = sds_struct.id;
+                        sd_struct.children(nds).properties = sds_struct.properties;
+                        sd_struct.children(nds).attributes = sds_struct.attributes;
+                        %-- get any associtated annotations to sds (see hdfsdinfo code)
+                        tag = hdfml('tagnum','DFTAG_NDG'); ref = hdfsd('idtoref',sds_id);
+                        if an_id~=-1
+                            [label,desc,stat,errtypelist] = make_an_struct(an_id,tag,ref);
+                            if isempty(label)|isempty(desc)
+                                tag = hdfml('tagnum','DFTAG_SD');
+                                [label,desc,stat,errtypelist] = make_an_struct(an_id,tag,ref);
+                            end
+                            if ~(isempty(label)&isempty(desc))&stat~=-1
+                                sd_struct.children(nds).annotations.label = label;
+                                sd_struct.children(nds).annotations.description = desc; 
+                            end
+                        end
+                        sd_struct.children(nds).children = sds_struct.children;
+                        sd_struct.children(nds).special = sds_struct.special;
+                    end % if ~strcmp(style,'short')
+                end
+            end
+            stat = hdfsd('endaccess',sds_id);
+            [status,errtype] = seterr(stat,status,errtype,'hdf2struct: endaccess',show);
+        end
+        sd_struct.properties.ndatasets = nds;
+        %-- close SD interface and H interface 
+        %    
+        stat = hdfsd('end',sd_id);    
+        [status,errtype] = seterr(stat,status,errtype,'hdf2struct: SD end',show);
+        stat = hdfan('end',an_id);    
+        [status,errtype] = seterr(stat,status,errtype,'hdf2struct: AN end',show);
+        if close_flag==1
+            stat = hdfh('close',id); 
+            [status,errtype] = seterr(stat,status,errtype,'hdf2struct: H close',show);
+        end
+    end    
+    %----------------------------------------------------------------------
+    case 'scientific data set'
+        sd_struct = make_sds_struct(id,style,'smart');
+        if ~strcmp(singleton,'off'), sd_struct = sds_singletoninvfilter(sd_struct); end
+        if an_id~=-1
+            [label,desc,stat,errtypelist] = make_an_struct(an_id,tag,ref);
+            if isempty(label)|isempty(desc)
+                tag = hdfml('tagnum','DFTAG_SD');
+                [label,desc,stat,errtypelist] = make_an_struct(an_id,tag,ref);
+            end
+            if ~(isempty(label)&isempty(desc))&stat~=-1
+                sd_struct.children(nds).annotations.label = label;
+                sd_struct.children(nds).annotations.description = desc; 
+            end
+        end
+
+    %----------------------------------------------------------------------
+    otherwise
+        [status,errtype] = seterr(-1,status,errtype,'hdf2struct: no matched object',show);
+        
+    %----------------------------------------------------------------------
+    end
+   
+end % if status>=0
+
+%+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+function sds_struct = make_sds_struct(sds_id,style,dscontrol)
+%
+%  Make structure info of the Data Set with the fields :
+%          type: 'scientific data set'
+%            id: 32111
+%    properties: [mx1 struct] -> parameters
+%    attributes: [nx1 struct] -> attributes
+%      children: [px1 struct] -> dimensions in Matlab order
+%       special: []
+%        style     ->      'short' :  basic sds structure
+%                       'complete' :  (default) complete but without dataset data
+%                           'full' :  complete with dataset data
+%        dscontrol ->  'systematic':  the function use the systematic process, 
+%                                     without look for data set contained scale
+%                          'smart' :  (default) the dataset with scale are correctly precessed.
+%
+[ds_name,ds_rank,ds_dims,ds_type,nattrs,status] = hdfsd('getinfo',sds_id);
+if status==0
+    sds_struct.type = 'Scientific Data Set';
+    sds_struct.id   = sds_id;
+    sds_struct.properties.name = ds_name;
+    %sds_struct.properties.dimensions = ds_rank;
+    sds_struct.properties.size = fliplr(ds_dims);   % Matlab style
+    sds_struct.properties.datatype = ds_type;
+    sds_struct.properties.data = [];
+    sds_struct.attributes = [];
+    sds_struct.children = [];
+    sds_struct.special = [];
+    [file_id,tag,ref,length,offset,position,access,special,stat] = hdfh('inquire',sds_id);
+    if stat==0  % don't run (jcp 12/10/03)
+        sds_struct.properties.tagname = hdfhd('gettagsname',tag);
+        sds_struct.properties.ref = ref;
+    end
+    if ~strcmp(style,'short')
+        for ii=0:nattrs-1
+            [name,data_type,count,status] = hdfsd('attrinfo',sds_id,ii);
+            if status==0&~isempty(name)
+                if strcmp(name(1),'_'), name = name(2:end); end
+                [data,status] = hdfsd('readattr',sds_id,ii);
+                sds_struct.attributes = setfield(sds_struct.attributes,name,data);
+            end 
+        end
+    end
+    if strcmp(style,'full')
+        [data,status] = hdfsd('readdata',sds_id,zeros(1,ds_rank),[],ds_dims);
+        if status==0, sds_struct.properties.data = data; end
+    end
+    for ndim=1:ds_rank
+        dim_index = ds_rank - ndim;  % hdf sd dimension index
+        dim_id = hdfsd('getdimid',sds_id,dim_index);
+        if strcmp(dscontrol,'systematic')
+            tf = hdfsd('iscoordvar',sds_id);
+            if tf==1
+                [scale,status] = hdfsd('getdimscale',dim_id);
+            else
+                scale = [];
+            end
+        else
+            try
+                [scale,status] = hdfsd('getdimscale',dim_id);
+            catch
+                scale = [];
+            end
+        end
+        if status~=0, scale = []; end
+        [name,count,data_type,nattrs,status] = hdfsd('diminfo',dim_id);
+        if status==0
+            sds_struct.children(ndim).type = 'dimension';
+            sds_struct.children(ndim).id   = dim_id;
+            sds_struct.children(ndim).properties.name = name;
+            if strcmp(dscontrol,'systematic'), sds_struct.children(ndim).properties.hdfindex = dim_index; end
+            sds_struct.children(ndim).properties.axevector = scale;
+            sds_struct.children(ndim).properties.datatype = data_type;
+            if ~strcmp(style,'short')
+                for ii=0:nattrs-1
+                    [name,data_type,count,status] = hdfsd('attrinfo',dim_id,ii);
+                    if status==0&~isempty(name)
+                        [data,status] = hdfsd('readattr',dim_id,ii);
+                        sds_struct.children(ndim).attributes = setfield(sds_struct.children(ndim).attributes,name,data);
+                    end
+                end
+            end % if strcmp
+        end % if status
+    end % for
+else
+    sds_struct = [];
+end
+%-------------------------------------------------------------------------------------------------
+%+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+function sds_struct = sds_singletoninvfilter(sds_struct)
+%
+%    Allow possibility to re-create array with singletons (see Matlab documentation)
+%    from sds strored with sds_singletonfilter
+%
+%    input sds_struct -> structure of the Data Set stored with sdsstruct2sds (no singleton)
+%
+%    output sds_struct -> structure of the Data Set which can have singletons is the fields matlabsize,
+%                         singletonnames and singletonaxevalues are presents in attributes
+%
+%   Remark : Matlab offers the possibility to use array with singletons but
+%            it is not possible with HDF. To store this information the input
+%            sds_struct match HDF requirements : 
+%             input -> sds_struct.properties.size: [5 2]
+%                      sds_struct.properties.data = squeeze(insds_struct.properties.data)
+%                      sds_struct.children(1).properties.name: 'Frequency'
+%                      sds_struct.children(1).properties.axevector: [2 4 6 8 10]
+%                      sds_struct.children(2).properties.name: 'Reference'
+%                      sds_struct.children(2).properties.axevector: [1 2]
+%                      sds_struct.attributes.matlabsize : [5 1 2]
+%                      sds_struct.attributes.singletonnames: '$$Delay' or ['Delay' '$$' others ...]
+%                      sds_struct.attributes.singletonaxevalues: 0.25 or [0.25 others ...]
+%            and the output decribes sds_struct in the Matlab form (with singleton) :
+%            output -> sds_struct.properties.size: [5 1 2]
+%                      sds_struct.children(1).properties.name: 'Frequency'
+%                      sds_struct.children(1).properties.axevector: [2 4 6 8 10]
+%                      sds_struct.children(2).properties.name: 'Delay'
+%                      sds_struct.children(2).properties.axevector: 0.25
+%                      sds_struct.children(3).properties.name: 'Reference'
+%                      sds_struct.children(3).properties.axevector: [1 2]
+%   NB : If there are several singletons, $$ is the separator for singletonnames
+%      
+%   jcp    01/10/03
+%--------------------------------------------------------------------------
+%  name  |   date    |  modification description
+%--------------------------------------------------------------------------
+%        |           |
+%--------------------------------------------------------------------------
+
+%--test if there are singletons
+if isfield(sds_struct,'attributes')
+if isfield(sds_struct.attributes,'matlabsize')  
+    arraysize = sds_struct.attributes.matlabsize;
+    %--find singletons
+    ind = find(arraysize==1);
+    if ~isempty(ind)
+        singletonnames = sds_struct.attributes.singletonnames;
+        singletonaxevalues = sds_struct.attributes.singletonaxevalues;
+        %--create new dimension children
+        posnames = findstr(singletonnames,'$$');
+        for ii=length(arraysize):-1:1
+            if ~isempty(posnames)
+                if isempty(find(ind==ii))
+                    sds_struct.children(ii) = sds_struct.children(ii-1);
+                else
+                    sds_struct.children(ii).properties.name = singletonnames(posnames(end)+2:end);
+                    singletonnames = singletonnames(1:posnames(end)-1);
+                    posnames(end) = [];
+                    sds_struct.children(ii).properties.axevector = singletonaxevalues(end);
+                    singletonaxevalues(end) = [];
+                end    
+            end
+        end
+        %--set new size and remote attributes
+        sds_struct.properties.size = arraysize;
+        sds_struct.attributes = rmfield(sds_struct.attributes,{'matlabsize','singletonnames','singletonaxevalues'});
+        if ~isempty(sds_struct.properties.data)
+            sds_struct.properties.data = reshape(sds_struct.properties.data,arraysize);
+        end
+    end
+end  % if isfield
+end  % if isfield
+
+%-------------------------------------------------------------------------------------------------
+
+%+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+function [label,desc,status,errtype] = make_an_struct(an_id,tag,ref)
+%
+%  Returns the label and the description cells of an object or file 
+%
+%   an_id      -> multi annotation interface id
+%   tag        -> tag of the corresponding object (if file, tag = [])
+%   ref        -> ref of the corresponding object (if file, ref = [])
+%
+%   from annotationinfo (hdfinfo) and hdfannotationinfo (Revision: 1.2 2001/04/15, Matlab 6.1)
+%
+% hdfan('annlen',...) does not include null termination character read by 
+% hdfan('readann'...). Adding 1 to length for this reason. (only for label ! jcp 12/10/03)
+show = 0;
+
+label = {};
+desc = {};
+
+status = 0; errtype = {};
+
+if isempty(tag)|isempty(ref)   % case of file annotations
+    [numFileLabel,numFileDesc,numDataLabel,numDataDesc,stat] = hdfan('fileinfo',an_id);
+    [status,errtype] = seterr(stat,status,errtype,'hdf2struct: AN fileinfo',show);
+    numLabel = numFileLabel; numDesc = numFileDesc;
+    for ii=1:numLabel
+        LabelID(ii) = hdfan('select',an_id,ii-1,'file_label');
+        %[status,errtype] = seterr(LabelID(ii),status,errtype,'hdf2struct: AN select',show);
+    end
+    for ii=1:numDesc
+        DescID(ii) = hdfan('select',an_id,ii-1,'file_desc');
+        %[status,errtype] = seterr(DescID(ii),status,errtype,'hdf2struct: AN select',show);
+    end
+else                          % case of object annotations
+    numLabel = hdfan('numann',an_id,'data_label',tag,ref);
+    if numLabel>0
+        [LabelID,stat] = hdfan('annlist',an_id,'data_label',tag,ref);
+        %[status,errtype] = seterr(stat,status,errtype,'hdf2struct: AN annlist',show);
+    end
+    numDesc  = hdfan('numann',an_id,'data_desc',tag,ref);
+    if numDesc>0
+        [DescID, stat] = hdfan('annlist',an_id,'data_desc',tag,ref);
+        %[status,errtype] = seterr(stat,status,errtype,'hdf2struct: AN annlist',show);
+    end
+end
+
+if status==0
+    for ii=1:numLabel
+        if LabelID(ii)~=-1
+	        length = hdfan('annlen',LabelID(ii));
+	        [label{ii},stat] = hdfan('readann',LabelID(ii),length + 1);  % only for label ! jcp 12/10/03
+            [status,errtype] = seterr(stat,status,errtype,'hdf2struct: AN readann',show);
+            stat = hdfan('endaccess',LabelID(ii));
+	        [status,errtype] = seterr(stat,status,errtype,'hdf2struct: AN endaccess',show);
+        end
+    end
+
+    for ii=1:numDesc
+        if DescID(ii)~=-1
+            length = hdfan('annlen',DescID(ii));
+	        [desc{ii},stat] = hdfan('readann',DescID(ii),length);        % .... jcp 12/10/03
+            [status,errtype] = seterr(stat,status,errtype,'hdf2struct: AN readann',show);
+            stat = hdfan('endaccess',DescID(ii));
+	        [status,errtype] = seterr(stat,status,errtype,'hdf2struct: AN endaccess',show);
+        end
+    end
+end
+
+%-------------------------------------------------------------------------------------------------
+
+%+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+function varargout = hdfid2info(id)
+%hdfid2info
+%
+% PURPOSE
+%    Obtain name of hdf object from hdf identifier 
+%
+% SYNOPSIS
+%      [status,hdfobjname] = hdfid2info(id)
+%
+% DESCRIPTION
+%
+% SEE ALSO
+%   
+
+% EXAMPLES   
+%
+% ALGORITHM
+%    
+% REFERENCES
+%    Matlab, Using Matlab, Version 6, 2002 (R13).
+%
+% Comments:   
+%
+% Matlab Toolbox functions used: none
+%
+% External librairies and languages: none
+%
+% Test procedure: none
+%
+% Copyright 1997-2003 VisualVibroAcoustics
+% jcp 01/06/03                                             version 01/06/03 
+%--------------------------------------------------------------------------
+%  name  |   date    |  modification description
+%--------------------------------------------------------------------------
+%        |           |
+%--------------------------------------------------------------------------
+
+%--validity control 1
+%
+status = -1; varargout{2} = '';
+
+[filename,acces_mode,attach,status] = hdfh('fidinquire',id);
+if status>=0, varargout{1} = status; varargout{2} = 'hdf file'; end
+
+[ndatasets,nglobal_attr,stat] = hdfsd('fileinfo',id);
+if status>=0, varargout{1} = status; varargout{2} = 'hdf scientific data'; end
+
+[class_name,status] = hdfv('getclass',id);
+if status>=0, varargout{1} = status; varargout{2} = 'vgroup'; end
+
+[name,rank,dimsizes,data_type,nattrs,status] = hdfsd('getinfo',id);
+if status>=0, varargout{1} = status; varargout{2} = 'scientific data set'; end
+
+[class_name,status] = hdfvs('getclass',id);
+if status>=0, varargout{1} = status; varargout{2} = 'vdata'; end
+
+[nfl,nfd,ndl,ndd,status] = hdfan('fileinfo',id);
+if status>=0, varargout{1} = status; varargout{2} = 'annotation'; end
+
+
+
+
+
