@@ -29,6 +29,8 @@
     
     \usepackage{subfigure}
     \usepackage{minted}
+    \usepackage{multicol}
+
     
     \newcommand\matlab{MATLab\textsuperscript{\textregistered}}
 
@@ -98,5 +100,11 @@ Cette méthode est basée sur la décomposition en valeurs propres de la matrice
 
 où $\sigma_q$ sont les valeurs propres de l'espace bruit et $M$ est le nombre de champs cohérents orthogonaux qui composent $G_{pp}$.
 
+\newpage
+\addtolength{\oddsidemargin}{-1cm}
+\addtolength{\textheight}{2cm}
+\renewcommand{\headsep}{-1cm}
+\addtolength{\footskip}{3cm}
+\include{code}
 
 \end{document}

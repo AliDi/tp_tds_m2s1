@@ -1,8 +1,0 @@
-% bf_traitement
-%
-% TP Formation de voies
-% Jean-Claude Pascal et Jean-Hugh Thomas
-%
-close all; clear all;
-%-- détermination de la méthode : 'bartlet','capon','music'
-bfmethod = 'music';
