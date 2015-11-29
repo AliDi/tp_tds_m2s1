@@ -6,7 +6,7 @@
 %
 close all; clear all;
 %-- d�termination de la m�thode : 'bartlet','capon','music'
-bfmethod = 'capon';
+bfmethod = 'music';
 
 disp(' '), disp(['-- Traitement avec la m�thode ',bfmethod]), disp(' ')
 
@@ -73,8 +73,8 @@ Gpp = conj(Gpp);
 %  dist   -> la distance du plan de repr�sentation � celui de l'antenne
 %  Xmin Xmax Ymin Ymax -> les limites du plan de repr�sentation 
 % L'origine du rep�re est situ�e sur l'axe de l'antenne. Par exemple :
-Nx = 40;
-Ny = 40;
+Nx = 200;
+Ny = 200;
 dist = 1.43;
 Xmin = -1;
 Xmax = 1;
@@ -111,7 +111,9 @@ elseif strcmpi(bfmethod,'music')
 
     [u,s,v] = svd(Gpp);
     figure
-    plot(s);
+    plot(diag(s)); 
+    ylabel('Valeurs propres (au carré) de Gpp');
+    q0=input('Taille espace signal ? '); %taille de l'espace signal
 
 
 end    
@@ -119,12 +121,12 @@ end
 %==============================================================================
 % Boucle de traitement pour chacun des points sources  (code � compl�ter) 
 %------------------------------------------------------------------------------
-hw = waitbar(0,['traitement m�thode ',bfmethod,' ...']);
+%hw = waitbar(0,['traitement m�thode ',bfmethod,' ...']);
 S = zeros(Np,1);
 
 for ii=1:Np
     
-    waitbar(ii/Np,hw);
+    %waitbar(ii/Np,hw);
     
     %-- vecteur [1 3] des coordonn�es du point source
     coorsrc = srcpnts(ii,:);
@@ -165,7 +167,7 @@ for ii=1:Np
     elseif strcmpi(bfmethod,'capon')
         % voir Eq. 5.5
     
-        w=Gpp_inv*h/(h'*Gpp_inv*h);
+        w=Gpp_inv*h*(h'*Gpp_inv*h)^(-1);
 
 
     end    
@@ -191,7 +193,7 @@ for ii=1:Np
     elseif strcmpi(bfmethod,'music')
         % voir Eq. 6.3
         somme=0;
-        q0=4; %taille de l'espace signal
+        
         for q=q0:M
             somme= somme+ (abs(h'*u(:,q)))^2;
         end
@@ -202,7 +204,7 @@ for ii=1:Np
 %------------------------------------------------------------------------------
 end % fin de la boucle ii=1:Np
 
-close(hw),
+%close(hw),
 %------------------------------------------------------------------------------
 
 
@@ -214,6 +216,7 @@ close(hw),
 % selon meshgrid S doit avoir comme dimensions [Ny Nx]
 S = reshape(S,Ny,Nx);
 S = real(S);
+
 
 %-- utiliser ici �ventuellement une interpolation pour avoir un maillage de 
 %   repr�sentation plus fin  (fonction interp2 de Matlab)
@@ -249,7 +252,7 @@ repstruct.unit = '';       %  -> string of quantity unit to put under the colorb
 else
     
 %-- pour une repr�sentation en dB
-Dyn = 20;
+Dyn = 15;
 RefdB = 1e-12;
 repstruct.mode = 'dB*';
 repstruct.dynscal = Dyn;   %  -> range of representation of scalar map (used for dB)
@@ -265,6 +268,11 @@ end
 
 figure
 %imagesc(x1,y1,S1)
-ccmap(repstruct,(x1),y1,(S1));
-%imagesc(S1);
+ccmap(repstruct,(x1),y1,fliplr(flipud(S1)));
+
+
+figure
+imagesc((x1),y1,10*log10(fliplr((S1))));
+%imagesc(x1(Nx/4:3*Nx/4),y1(Ny/4:3*Ny/4),fliplr(10*log10(S1(Ny/4:3*Ny/4,Nx/4:3*Nx/4))));
+colorbar;
 

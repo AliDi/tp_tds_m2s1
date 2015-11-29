@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.15 (TeX Live 2015/dev/Debian) (preloaded format=pdflatex 2015.11.2)  26 NOV 2015 12:46
+This is pdfTeX, Version 3.14159265-2.6-1.40.15 (TeX Live 2015/dev/Debian) (preloaded format=pdflatex 2015.11.2)  29 NOV 2015 19:03
 entering extended mode
  \write18 enabled.
  %&-line parsing enabled.
@@ -1091,29 +1091,36 @@ Package: multicol 2014/10/28 v1.8i multicolumn formatting (FMi)
 \colbreak@box=\box68
 \mc@col@check@num=\count150
 )
-(./CR_TP2.aux (./code.aux))
+(/usr/share/texlive/texmf-dist/tex/latex/tools/array.sty
+Package: array 2014/10/28 v2.4c Tabular extension package (FMi)
+\col@sep=\dimen192
+\extrarowheight=\dimen193
+\NC@list=\toks39
+\extratabsurround=\skip75
+\backup@length=\skip76
+) (./CR_TP2.aux
+(./code.aux))
 \openout1 = `CR_TP2.aux'.
 
-LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 44.
-LaTeX Font Info:    ... okay on input line 44.
-LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 44.
-LaTeX Font Info:    ... okay on input line 44.
-LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 44.
-LaTeX Font Info:    ... okay on input line 44.
-LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 44.
-LaTeX Font Info:    ... okay on input line 44.
-LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 44.
-LaTeX Font Info:    ... okay on input line 44.
-LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 44.
-LaTeX Font Info:    ... okay on input line 44.
-LaTeX Font Info:    Checking defaults for TS1/cmr/m/n on input line 44.
-LaTeX Font Info:    Try loading font information for TS1+cmr on input line 44.
-
-(/usr/share/texlive/texmf-dist/tex/latex/base/ts1cmr.fd
+LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 46.
+LaTeX Font Info:    ... okay on input line 46.
+LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 46.
+LaTeX Font Info:    ... okay on input line 46.
+LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 46.
+LaTeX Font Info:    ... okay on input line 46.
+LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 46.
+LaTeX Font Info:    ... okay on input line 46.
+LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 46.
+LaTeX Font Info:    ... okay on input line 46.
+LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 46.
+LaTeX Font Info:    ... okay on input line 46.
+LaTeX Font Info:    Checking defaults for TS1/cmr/m/n on input line 46.
+LaTeX Font Info:    Try loading font information for TS1+cmr on input line 46.
+ (/usr/share/texlive/texmf-dist/tex/latex/base/ts1cmr.fd
 File: ts1cmr.fd 2014/09/29 v2.5h Standard LaTeX font definitions
 )
-LaTeX Font Info:    ... okay on input line 44.
-LaTeX Font Info:    Try loading font information for T1+lmr on input line 44.
+LaTeX Font Info:    ... okay on input line 46.
+LaTeX Font Info:    Try loading font information for T1+lmr on input line 46.
 
 (/usr/share/texmf/tex/latex/lm/t1lmr.fd
 File: t1lmr.fd 2009/10/30 v1.6 Font defs for Latin Modern
@@ -1121,16 +1128,16 @@ File: t1lmr.fd 2009/10/30 v1.6 Font defs for Latin Modern
 (/usr/share/texlive/texmf-dist/tex/context/base/supp-pdf.mkii
 [Loading MPS to PDF converter (version 2006.09.02).]
 \scratchcounter=\count151
-\scratchdimen=\dimen192
+\scratchdimen=\dimen194
 \scratchbox=\box69
 \nofMPsegments=\count152
 \nofMParguments=\count153
-\everyMPshowfont=\toks39
+\everyMPshowfont=\toks40
 \MPscratchCnt=\count154
-\MPscratchDim=\dimen193
+\MPscratchDim=\dimen195
 \MPnumerator=\count155
 \makeMPintoPDFobject=\count156
-\everyMPtoPDFconversion=\toks40
+\everyMPtoPDFconversion=\toks41
 ) ABD: EveryShipout initializing macros
 (/usr/share/texlive/texmf-dist/tex/latex/oberdiek/epstopdf-base.sty
 Package: epstopdf-base 2010/02/09 v2.5 Base part for package epstopdf
@@ -1156,9 +1163,9 @@ G,.JBIG2,.JB2,.eps]
 File: epstopdf-sys.cfg 2010/07/13 v1.3 Configuration of (r)epstopdf for TeX Liv
 e
 ))
-LaTeX Info: Redefining \degres on input line 44.
-LaTeX Info: Redefining \dots on input line 44.
-LaTeX Info: Redefining \up on input line 44.
+LaTeX Info: Redefining \degres on input line 46.
+LaTeX Info: Redefining \dots on input line 46.
+LaTeX Info: Redefining \up on input line 46.
 
 *geometry* driver: auto-detecting
 *geometry* detected driver: pdftex
@@ -1200,7 +1207,7 @@ Package lastpage Info: Please have a look at the pageslts package at
 (lastpage)             or
 (lastpage)             http://www.ctan.org/tex-archive/ 
 (lastpage)             install/macros/latex/contrib/pageslts.tds.zip
-(lastpage)             ! on input line 44.
+(lastpage)             ! on input line 46.
 Package caption Info: Begin \AtBeginDocument code.
 Package caption Info: float package is loaded.
 Package caption Info: subfigure package is loaded.
@@ -1208,77 +1215,179 @@ Package caption Info: End \AtBeginDocument code.
 runsystem(pygmentize -S default -f latex > CR_TP2.pyg)...executed.
 
 (./CR_TP2.pyg)
-LaTeX Font Info:    Try loading font information for OT1+lmr on input line 45.
+LaTeX Font Info:    Try loading font information for OT1+lmr on input line 47.
  (/usr/share/texmf/tex/latex/lm/ot1lmr.fd
 File: ot1lmr.fd 2009/10/30 v1.6 Font defs for Latin Modern
 )
-LaTeX Font Info:    Try loading font information for OML+lmm on input line 45.
+LaTeX Font Info:    Try loading font information for OML+lmm on input line 47.
 
 (/usr/share/texmf/tex/latex/lm/omllmm.fd
 File: omllmm.fd 2009/10/30 v1.6 Font defs for Latin Modern
 )
-LaTeX Font Info:    Try loading font information for OMS+lmsy on input line 45.
+LaTeX Font Info:    Try loading font information for OMS+lmsy on input line 47.
 
 
 (/usr/share/texmf/tex/latex/lm/omslmsy.fd
 File: omslmsy.fd 2009/10/30 v1.6 Font defs for Latin Modern
 )
-LaTeX Font Info:    Try loading font information for OMX+lmex on input line 45.
+LaTeX Font Info:    Try loading font information for OMX+lmex on input line 47.
 
 
 (/usr/share/texmf/tex/latex/lm/omxlmex.fd
 File: omxlmex.fd 2009/10/30 v1.6 Font defs for Latin Modern
 )
 LaTeX Font Info:    External font `lmex10' loaded for size
-(Font)              <12> on input line 45.
+(Font)              <12> on input line 47.
 LaTeX Font Info:    External font `lmex10' loaded for size
-(Font)              <8> on input line 45.
+(Font)              <8> on input line 47.
 LaTeX Font Info:    External font `lmex10' loaded for size
-(Font)              <6> on input line 45.
-LaTeX Font Info:    Try loading font information for U+msa on input line 45.
+(Font)              <6> on input line 47.
+LaTeX Font Info:    Try loading font information for U+msa on input line 47.
 
 (/usr/share/texlive/texmf-dist/tex/latex/amsfonts/umsa.fd
 File: umsa.fd 2013/01/14 v3.01 AMS symbols A
 )
-LaTeX Font Info:    Try loading font information for U+msb on input line 45.
+LaTeX Font Info:    Try loading font information for U+msb on input line 47.
 
 (/usr/share/texlive/texmf-dist/tex/latex/amsfonts/umsb.fd
 File: umsb.fd 2013/01/14 v3.01 AMS symbols B
 )
-Underfull \hbox (badness 10000) in paragraph at lines 53--54
+Underfull \hbox (badness 10000) in paragraph at lines 55--56
 
  []
 
+LaTeX Font Info:    External font `lmex10' loaded for size
+(Font)              <10> on input line 61.
+LaTeX Font Info:    External font `lmex10' loaded for size
+(Font)              <7> on input line 61.
+LaTeX Font Info:    External font `lmex10' loaded for size
+(Font)              <5> on input line 61.
 <exp.png, id=4, 362.85562pt x 283.0575pt>
 File: exp.png Graphic file (type png)
  <use exp.png>
-Package pdftex.def Info: exp.png used on input line 65.
+Package pdftex.def Info: exp.png used on input line 72.
 (pdftex.def)             Requested size: 213.39568pt x 166.4712pt.
+ [1
 
-<exp2.png, id=6, 356.83313pt x 283.0575pt>
-File: exp2.png Graphic file (type png)
- <use exp2.png>
-Package pdftex.def Info: exp2.png used on input line 69.
-(pdftex.def)             Requested size: 213.39568pt x 169.2743pt.
+{/var/lib/texmf/fonts/map/pdftex/updmap/pdftex.map} <./exp.png>]
+Underfull \hbox (badness 10000) in paragraph at lines 95--96
 
-Overfull \hbox (46.23048pt too wide) in paragraph at lines 65--70
-[][]   [] 
  []
 
-LaTeX Font Info:    External font `lmex10' loaded for size
-(Font)              <10> on input line 73.
-LaTeX Font Info:    External font `lmex10' loaded for size
-(Font)              <7> on input line 73.
-LaTeX Font Info:    External font `lmex10' loaded for size
-(Font)              <5> on input line 73.
-[1
 
-{/var/lib/texmf/fonts/map/pdftex/updmap/pdftex.map} <./exp.png> <./exp2.png>]
-Underfull \hbox (badness 10000) in paragraph at lines 90--91
+Underfull \hbox (badness 10000) in paragraph at lines 111--112
+
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 114--115
+
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 116--117
+
+ []
+
+<autospectre_16h.png, id=21, 411.136pt x 308.352pt>
+File: autospectre_16h.png Graphic file (type png)
+ <use autospectre_16h.png>
+Package pdftex.def Info: autospectre_16h.png used on input line 122.
+(pdftex.def)             Requested size: 205.56749pt x 154.17561pt.
+
+
+LaTeX Warning: `!h' float specifier changed to `!ht'.
+
+
+Overfull \hbox (7.26991pt too wide) in paragraph at lines 133--133
+[]|\T1/lmr/m/n/10 Capon| 
+ []
+
+<capon_16h_600hz.png, id=22, 411.136pt x 308.352pt>
+File: capon_16h_600hz.png Graphic file (type png)
+ <use capon_16h_600hz.png>
+Package pdftex.def Info: capon_16h_600hz.png used on input line 133.
+(pdftex.def)             Requested size: 213.39568pt x 160.04753pt.
+
+<capon_16h_1000hz.png, id=23, 411.136pt x 308.352pt>
+File: capon_16h_1000hz.png Graphic file (type png)
+
+<use capon_16h_1000hz.png>
+Package pdftex.def Info: capon_16h_1000hz.png used on input line 133.
+(pdftex.def)             Requested size: 213.39568pt x 160.04753pt.
+
+Overfull \hbox (9.65907pt too wide) in paragraph at lines 134--134
+[]|\T1/lmr/m/n/10 Bartlet| 
+ []
+
+<bartlet_16h_600hz.png, id=24, 411.136pt x 308.352pt>
+File: bartlet_16h_600hz.png Graphic file (type png)
+
+<use bartlet_16h_600hz.png>
+Package pdftex.def Info: bartlet_16h_600hz.png used on input line 134.
+(pdftex.def)             Requested size: 213.39568pt x 160.04753pt.
+
+<bartlet_16h_1000hz.png, id=25, 411.136pt x 308.352pt>
+File: bartlet_16h_1000hz.png Graphic file (type png)
+
+<use bartlet_16h_1000hz.png>
+Package pdftex.def Info: bartlet_16h_1000hz.png used on input line 134.
+(pdftex.def)             Requested size: 213.39568pt x 160.04753pt.
+
+Overfull \hbox (11.71461pt too wide) in paragraph at lines 135--135
+[]|\T1/lmr/m/n/10 MUSIC| 
+ []
+
+<music_16h_600hz_2.png, id=26, 411.136pt x 308.352pt>
+File: music_16h_600hz_2.png Graphic file (type png)
+
+<use music_16h_600hz_2.png>
+Package pdftex.def Info: music_16h_600hz_2.png used on input line 135.
+(pdftex.def)             Requested size: 213.39568pt x 160.04753pt.
+
+<music_16h_1000hz_5.png, id=27, 411.136pt x 308.352pt>
+File: music_16h_1000hz_5.png Graphic file (type png)
+
+<use music_16h_1000hz_5.png>
+Package pdftex.def Info: music_16h_1000hz_5.png used on input line 135.
+(pdftex.def)             Requested size: 213.39568pt x 160.04753pt.
+
+Overfull \hbox (57.34087pt too wide) in paragraph at lines 130--137
+ [] 
+ []
+
+
+LaTeX Warning: `!h' float specifier changed to `!ht'.
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 141--142
 
  []
 
 [2]
+Underfull \hbox (badness 10000) in paragraph at lines 148--149
+
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 151--152
+
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 156--157
+
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 158--159
+
+ []
+
+[3 <./autospectre_16h.png (PNG copy)>] [4 <./capon_16h_600hz.png (PNG copy)> <.
+/capon_16h_1000hz.png (PNG copy)> <./bartlet_16h_600hz.png (PNG copy)> <./bartl
+et_16h_1000hz.png (PNG copy)> <./music_16h_600hz_2.png (PNG copy)> <./music_16h
+_1000hz_5.png (PNG copy)>]
 \openout2 = `code.aux'.
 
  (./code.tex
@@ -1290,30 +1399,31 @@ pyg)...executed.
 
  (./CR_TP2.out.pyg
 LaTeX Font Info:    Try loading font information for T1+lmtt on input line 1.
- (/usr/share/texmf/tex/latex/lm/t1lmtt.fd
+
+(/usr/share/texmf/tex/latex/lm/t1lmtt.fd
 File: t1lmtt.fd 2009/10/30 v1.6 Font defs for Latin Modern
 )
 LaTeX Font Info:    Font shape `T1/lmtt/bx/n' in size <10> not available
 (Font)              Font shape `T1/lmtt/b/n' tried instead on input line 26.
+ [5
 
-[3
-
-] [4] [5] [6])
+] [6] [7] [8])
 runsystem(rm CR_TP2.out.pyg)...executed.
 
 runsystem(rm CR_TP2.pyg)...executed.
 
-) [7] 
+) [9]
+
 AED: lastpage setting LastPage
 (./CR_TP2.aux (./code.aux)) ) 
 Here is how much of TeX's memory you used:
- 17756 strings out of 493105
- 325490 string characters out of 6137072
- 377585 words of memory out of 5000000
- 20775 multiletter control sequences out of 15000+600000
- 64208 words of font info for 66 fonts, out of 8000000 for 9000
+ 17828 strings out of 493105
+ 326775 string characters out of 6137072
+ 381301 words of memory out of 5000000
+ 20840 multiletter control sequences out of 15000+600000
+ 64214 words of font info for 66 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
- 62i,8n,92p,698b,439s stack positions out of 5000i,500n,10000p,200000b,80000s
+ 62i,15n,92p,698b,439s stack positions out of 5000i,500n,10000p,200000b,80000s
 {/usr/share/texmf/fonts/enc/dvips/lm/lm-ec.enc}{/u
 sr/share/texmf/fonts/enc/dvips/lm/lm-rm.enc}{/usr/share/texmf/fonts/enc/dvips/l
 m/lm-mathit.enc}{/usr/share/texmf/fonts/enc/dvips/lm/lm-mathsy.enc}{/usr/share/
@@ -1330,14 +1440,13 @@ e/texmf/fonts/type1/public/lm/lmmib7.pfb></usr/share/texmf/fonts/type1/public/l
 m/lmr10.pfb></usr/share/texmf/fonts/type1/public/lm/lmr12.pfb></usr/share/texmf
 /fonts/type1/public/lm/lmr17.pfb></usr/share/texmf/fonts/type1/public/lm/lmr5.p
 fb></usr/share/texmf/fonts/type1/public/lm/lmr7.pfb></usr/share/texmf/fonts/typ
-e1/public/lm/lmr8.pfb></usr/share/texmf/fonts/type1/public/lm/lmsy10.pfb></usr/
-share/texmf/fonts/type1/public/lm/lmsy7.pfb></usr/share/texmf/fonts/type1/publi
-c/lm/lmtk10.pfb></usr/share/texmf/fonts/type1/public/lm/lmtt10.pfb></usr/share/
-texmf/fonts/type1/public/lm/lmtti10.pfb>
-Output written on CR_TP2.pdf (7 pages, 547123 bytes).
+e1/public/lm/lmsy10.pfb></usr/share/texmf/fonts/type1/public/lm/lmsy7.pfb></usr
+/share/texmf/fonts/type1/public/lm/lmtk10.pfb></usr/share/texmf/fonts/type1/pub
+lic/lm/lmtt10.pfb></usr/share/texmf/fonts/type1/public/lm/lmtti10.pfb>
+Output written on CR_TP2.pdf (9 pages, 501343 bytes).
 PDF statistics:
- 146 PDF objects out of 1000 (max. 8388607)
- 106 compressed objects within 2 object streams
+ 153 PDF objects out of 1000 (max. 8388607)
+ 107 compressed objects within 2 object streams
  0 named destinations out of 1000 (max. 500000)
- 23 words of extra memory for PDF output out of 10000 (max. 10000000)
+ 53 words of extra memory for PDF output out of 10000 (max. 10000000)
 

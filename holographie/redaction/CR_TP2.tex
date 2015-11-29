@@ -30,6 +30,8 @@
     \usepackage{subfigure}
     \usepackage{minted}
     \usepackage{multicol}
+    \usepackage{array}
+
 
     
     \newcommand\matlab{MATLab\textsuperscript{\textregistered}}
@@ -56,25 +58,28 @@ Ce rapport vise à comparer trois méthodes de formation de voies testées sur d
 
 \section{Obtention des données de test}
 
-Des mesures de champs acoustiques sont effectuées à l'aide d'une antenne constituée de \textcolor{red}{??????} microphones disposés en spirale.
+Des mesures de champs acoustiques sont effectuées à l'aide d'une antenne constituée de 36 microphones disposés en spirale. Ces microphones sont séparés d'environ $d=10cm$.
 
-Les sources sont placées dans un plan situé à 1,43 m de l'axe de l'antenne. Deux configurations sont testées et présentées en figure~\ref{exp}.
+Afin d'obtenir un minimum de 2 points de mesures par longueur d'onde $\lambda$, il faut respecter la relation suivante : $$d < \frac{\lambda}{2} ~~~~\Rightarrow~~~~ f < \frac{c}{2d}.$$
+
+L'étude ne peut donc pas être réalisée au-delà de $1715 Hz$.
+
+Les sources sont placées dans un plan situé à 1,43 m de l'axe de l'antenne. La configuration testée est présentée en figure~\ref{exp}.
 
 \begin{figure}[!h]
-	\subfigure[Configuration 1 : le haut-parleur 1 émet un sinus pur à 600 Hz et l'enceinte 2 émet un bruit blanc.]{
-		\includegraphics[width=.5\textwidth]{exp.png} }
-	\hspace{1cm}
-	\subfigure[Configuration 2 : le haut-parleur 1 émet un sinus pur à 800 Hz et l'enceinte 2 émet un bruit blanc.]{
-		\includegraphics[width=.5\textwidth]{exp2.png}
-	}
-	\caption{\label{exp} Configurations du plan source.}
+	\centering
+	\caption{Configuration de la mesure : le haut-parleur 1 émet un signal triangle à 600 Hz et l'enceinte 2 émet un bruit blanc.}
+		\includegraphics[width=.5\textwidth]{exp.png} 
+	\label{exp}
 \end{figure}
 
 La matrice interspectrale des microphones appelée $G_{pp}$ peut ainsi être obtenue à l'aide du logiciel Signal Express et du boîtier d'acquisition National Instrument.
 
 
+\section{Méthodes de formation de voies}
 
-\section{Méthode de Bartlet}
+Pour localiser les différentes sources, un programme Matlab (disponible en annexe) est écrit sur la base de trois méthodes de formation de voies. 
+\subsection{Méthode de Bartlet}
 
 La méthode de Bartlet consiste à déterminer le vecteur de pointage $\b{w_i}$ tel que l'amplitude estimée des sources $S_i$ s'écrive : $$S_i=\b{w_{i}^{H}p},$$ avec $\b{p}$ les signaux de pression mesurés par les microphones.
 
@@ -83,7 +88,7 @@ Le vecteur $\b{w_i}$ est calculé en minimisant la fonction coût $|\b{w_{i}^{H}
 On trouve alors $$\b{w_{i}}=\b{\frac{h_i}{h_{i}^{H}h_{i}}}$$ avec $\b{h_i}$ la contribution de la source i, composée des fonctions de transfert entre chaque microphone m et cette source. Ces fonctions de transfert sont ici celles d'un rayonnement en espace libre sur une distance $r_{mi}$ : $$ h_{mi}=\frac{e^{-jkr_{mi}}}{4\pi r_{mi}}.$$
 
 
-\section{Méthode de Capon}
+\subsection{Méthode de Capon}
 
 Dans la méthode de Capon, seule la définition du vecteur de pointage change : on cherche à minimiser $\b{w_{i}^{H}G_{pp}w_{i}}$ avec la contrainte de normalisation $\b{w_{i}^{H}h_i}=1$. 
 
@@ -91,7 +96,7 @@ En résolvant ce problème avec la méthode des multiplicateurs de Lagrange, on 
 
 Cette méthode est supposée donner de meilleurs résultats que la méthode précédente, mais comporte la contrainte de l'inversion de la matrice $G_{pp}$.
 
-\section{Méthode MUSIC}
+\subsection{Méthode MUSIC}
 
 Cette méthode est basée sur la décomposition en valeurs propres de la matrice interspectrale $G_{pp}$. Cette matrice est ensuite décomposée en un sous-espace signal et un sous-espace bruit. Le sous-espace bruit correspond aux plus petites valeurs propres de $G_{pp}$ et est utilisé pour estimer la présence $P_i$ d'une source au point $i$ :
  \begin{equation}
@@ -99,6 +104,62 @@ Cette méthode est basée sur la décomposition en valeurs propres de la matrice
 \end{equation}
 
 où $\sigma_q$ sont les valeurs propres de l'espace bruit et $M$ est le nombre de champs cohérents orthogonaux qui composent $G_{pp}$.
+
+
+\section{Résultats}
+
+Tout d'abord, le contenu global fréquentiel peut être apprécié en observant la moyenne des autospectres de chaque microphone. Sur la figure~\ref{auto}, les deux premiers harmoniques de la source 1 apparaissent clairement à 600 Hz et 1800 Hz, additionnés au bruit blanc de la source 2. \\
+
+
+Afin d'observer en premier lieu la source de bruit (2), les calculs de localisation sont effectués à 1000 Hz. Ainsi, la source (1) (de fondamental 600 Hz) ne devrait pas être visible.\\
+
+Ensuite, pour localiser la source (1), une étude à 600 Hz est effectuée. Cette source ne peut pas être localisé à l'aide de son deuxième harmonique, car il se situe trop haut en fréquence par rapport à la distance inter-microphonique.\\
+
+
+
+\begin{figure}[!h]
+	\centering
+	\includegraphics[scale=0.5]{autospectre_16h.png}
+	\caption{Moyenne sur chaque microphone de l'autospectre.\label{auto}}
+\end{figure}
+
+Les résultats du traitement des données expérimentales sont présentés dans le tableau~\ref{res}.
+
+\begin{table}[!h]
+\centering
+\hspace{-1cm}
+\begin{tabular}{m{.05\textwidth} m{.5\textwidth} m{.5\textwidth} }
+ & 600 Hz : Localisation de la source 1  & 1000 Hz : localisation de la source 2 \\
+	Capon & \includegraphics[width=0.5\textwidth]{capon_16h_600hz.png} &\hspace{-2cm} \includegraphics[width=0.5\textwidth]{capon_16h_1000hz.png}\\
+	Bartlet & \includegraphics[width=0.5\textwidth]{bartlet_16h_600hz.png} & \hspace{-2cm}\includegraphics[width=0.5\textwidth]{bartlet_16h_1000hz.png}  \\
+	MUSIC & \includegraphics[width=0.5\textwidth]{music_16h_600hz_2.png} &\hspace{-2cm} \includegraphics[width=0.5\textwidth]{music_16h_1000hz_5.png} 
+\end{tabular}
+\caption{Résultats de la localisation de sources pour différentes méthodes à différentes fréquences.\label{res}}
+\end{table}
+
+
+Pour la localisation de la source de bruit (à 1000 Hz), les méthodes de Bartlet et MUSIC permettent de la situer dans le centre du plan source comme attendu. En revanche, la méthode Capon de donne pas de résultats.\\
+
+
+Les méthodes de Bartlet et MUSIC permettent de localiser grossièrement la source 1 (à 600 Hz). 
+Il est difficile de dire si l'absence de la source 2 est due à une résolution spatiale qui ne permet pas de séparer géographiquement les deux sources ou à la différence prononcée de niveau entre les deux sources à 600 Hz (cf figure~\ref{auto}).
+
+
+ À 600 Hz, la méthode Capon ne donne pas non plus de résultats.\\
+
+
+De manière générale, la méthode MUSIC semble donner de meilleurs résultats sur la résolution spatiale, mais présente plus d'effets de bords que la méthode Bartlet.\\
+
+
+\section{Conclusion}
+
+Ce TP a donc permis de découvrir la formation de voie à travers trois méthodes dont les résultats sont mitigés. De meilleurs résultats pourraient être obtenus en approchant les sources de l'antenne ou en augmentant le niveau des sources pour améliorer le rapport signal sur bruit. De plus, en augmentant le temps d'acquisition des mesures, davantage de moyennes auraient pu être effectuées.\\
+
+Peut être est-il possible d'améliorer également les effets de bord par un filtrage adapté.\\
+
+
+
+
 
 \newpage
 \addtolength{\oddsidemargin}{-1cm}

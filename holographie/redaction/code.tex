@@ -262,8 +262,7 @@ repstruct.unit = 'dB';     %  -> string of quantity unit to put under the colorb
 end
 
 figure
-%imagesc(x1,y1,S1)
-ccmap(repstruct,x1,y1,S1);
+ccmap(repstruct,x1,y1,fliplr(flipud(S1)));
 
 
 
